@@ -62,11 +62,23 @@ class NeuralNetwork(object):
     def sigmoid(self, w):
         return 1.0/(1 + np.exp(-w))
 
-    def forwardProp(self, X, w1, w2):
+    def dropout_layer(self, layer):
+        """
+        layer:  np array which has already has had an activation function applied
+            to it
+
+        when applied, selects a percentage of layer to zero
+        """
+        drop_mask = np.random.binomial(1, self.dropout_rate, size=layer.shape)
+        layer *= drop_mask
+        return layer
+
+    def forwardProp(self, X, w1, w2, dropout=True):
         """
         X: input np array
         w1: matrix of weights from input layer to hidden layer
         w2: matrix of weights from hidden layer to output layer
+        dropout: If true, will apply dropout_rate to each layer
 
         Feeds forwards the inputs to output layer and then returns both weights
         all three layers for backpropagation later
@@ -75,12 +87,18 @@ class NeuralNetwork(object):
         m = X.shape[0]
         # insert a bias
         a1 = np.insert(X, 0, values=np.ones(m), axis=1)
+        # dropout
+        if self.dropout and dropout:
+            a1 = self.dropout_layer(a1)
         # multiply input + bias by weight1
         z2 = a1.dot(w1.T)
         # apply activation function
         a2 = self.sigmoid(z2)
         # add bias to the hidden layer
         a2 = np.insert(a2, 0, values=np.ones(m), axis=1)
+        # dropout
+        if self.dropout and dropout:
+            a2 = self.dropout_layer(a2)
         # multiply hidden layer + bias by weight 2
         z3 = a2.dot(w2.T)
         # apply activation function
@@ -131,7 +149,7 @@ class NeuralNetwork(object):
         for epoch in range(self.epochs):
             for i in range(len(X_split)):
                 a1, z2, a2, z3, a3 = self.forward_prop(X_split[i], self.w1, self.w2)
-                cost = self.get_cost(y_split[i], output=a3, w1=self.w1, w1=self.w2)
+                cost = self.get_cost(y_split[i], output=a3, w1=self.w1, w2=self.w2)
                 grad1, grad2 = self.backProp()
 
     def predict(self, X):
