@@ -35,30 +35,102 @@ class NeuralNetwork(object):
         self.dropout = dropout
         self.dropout_rate = dropout_rate
 
-    def init_weights(self):
+        self.w1
+        self.w2
+
+    def init_weights(self, L_in, L_out):
         """
         initializes thetas with random but uniform weights between -1 and 1
         """
-        w1 = np.random.uniform(-1.0, 1.0, size=(
-            self.n_hidden * (self.input_size + 1))).reshape(
-                self.n_hidden, self.input_size + 1)
+        w = np.random.uniform(-1.0, 1.0, size=(
+            L_out * (L_in + 1))).reshape(L_out, L_in + 1)
 
-        w2 = np.random.uniform(-1.0, 1.0, size=(
-            self.output_size * (self.hidden_size + 1))).reshape(
-                self.output_size, self.hidden_size + 1)
-
-        return w1, w2
+        return w
 
     def one_hot(self, y, size):
+        """
+        y: np array of numbers
+        size: number of classes inside y
+
+        This method converts y into a onehot version of itself
+        """
         onehot = np.zeros((size, y.shape[0]))
         for i in range(y.shape[0]):
             onehot[y[i], i] = 1.0
         return y
 
-    # def forwardProp():
+    def sigmoid(self, w):
+        return 1.0/(1 + np.exp(-w))
+
+    def forwardProp(self, X, w1, w2):
+        """
+        X: input np array
+        w1: matrix of weights from input layer to hidden layer
+        w2: matrix of weights from hidden layer to output layer
+
+        Feeds forwards the inputs to output layer and then returns both weights
+        all three layers for backpropagation later
+        """
+        # Shape of array for bias
+        m = X.shape[0]
+        # insert a bias
+        a1 = np.insert(X, 0, values=np.ones(m), axis=1)
+        # multiply input + bias by weight1
+        z2 = a1.dot(w1.T)
+        # apply activation function
+        a2 = self.sigmoid(z2)
+        # add bias to the hidden layer
+        a2 = np.insert(a2, 0, values=np.ones(m), axis=1)
+        # multiply hidden layer + bias by weight 2
+        z3 = a2.dot(w2.T)
+        # apply activation function
+        a3 = self.sigmoid(z3)
+        return a1, z2, a2, z2, a3
 
     # def backProp():
 
-    # def getCost():
+    def getCost(self, y, output, w1, w2):
+		"""
+		y: one-hot encoded class labels for a section of data that was just
+			passed through the forwardProp func
+		outout: the probabilities calculated with  forwardProp
+		w1: weights from input layer to hidden layer
+		w2: weights from hidden layer to input layer
 
-    # def fit():
+		Derives difference in output and y, and calculates a cost
+		"""
+		r = 0
+		J = r
+		return J
+
+    def fit(self, X, y):
+        """
+        X: matrix of training data, with dimensions of samples X input_size
+        y: array containing target data, [1,2,3,4]
+
+        Trains a neural net with these inputs by learning weights
+        """
+
+        X_data = X.copy()
+        y_data = y.copy()
+        y_onehot = self.one_hot(y_data, self.output_size)
+        self.w1 = self.init_weights(self.input_size, self.hidden_size)
+        self.w2 = self.init_weights(self.hidden_size, self.output_size)
+
+        # split the data into mini-batches
+        X_split = np.array_split(X_data, self.minibatch)
+        y_split = np.array_split(y_onehot, self.minibatch)
+
+        # Implementation of Gradient Descent
+        for epoch in range(self.epochs):
+            for i in range(len(X_split)):
+                a1, z2, a2, z3, a3 = self.forward_prop(X_split[i], self.w1, self.w2)
+                cost = self.get_cost(y_split[i], self.w1, self.w2)
+				grad1, grad2 = self.backProp
+
+    def predict(self, X):
+        """
+        X: matrix of training data, with dimensions of samples X input_size
+        After training a model with fit, predict with those same weights it
+        just learned with
+        """
