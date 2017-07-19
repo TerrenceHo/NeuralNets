@@ -90,18 +90,24 @@ class NeuralNetwork(object):
     # def backProp():
 
     def getCost(self, y, output, w1, w2):
-		"""
-		y: one-hot encoded class labels for a section of data that was just
-			passed through the forwardProp func
-		outout: the probabilities calculated with  forwardProp
-		w1: weights from input layer to hidden layer
-		w2: weights from hidden layer to input layer
+        """
+        y: one-hot encoded class labels for a section of data that was just
+            passed through the forwardProp func
+        outout: the probabilities calculated with  forwardProp
+        w1: weights from input layer to hidden layer
+        w2: weights from hidden layer to input layer
+        fdsalkjfsa
 
-		Derives difference in output and y, and calculates a cost
-		"""
-		r = 0
-		J = r
-		return J
+        Derives difference in output and y, and calculates a cost
+        """
+
+        m = y.shape[0]
+        w1Reg = np.sum(np.square(w1[:, 1:]))
+        w2Reg = np.sum(np.square(w2[:, 1:]))
+        r = (self.learning_rate/(2*m)) * (w1Reg + w2Reg)
+        J = (1/m) * np.sum( (-1 * y * np.log(output)) -
+                     ((1-y) * np.log(1 - output) ) ) + r
+        return J
 
     def fit(self, X, y):
         """
@@ -125,8 +131,8 @@ class NeuralNetwork(object):
         for epoch in range(self.epochs):
             for i in range(len(X_split)):
                 a1, z2, a2, z3, a3 = self.forward_prop(X_split[i], self.w1, self.w2)
-                cost = self.get_cost(y_split[i], self.w1, self.w2)
-				grad1, grad2 = self.backProp
+                cost = self.get_cost(y_split[i], output=a3, w1=self.w1, w1=self.w2)
+                grad1, grad2 = self.backProp()
 
     def predict(self, X):
         """
