@@ -1,4 +1,9 @@
-def load_mnist(self, path, kind='train'):
+import os
+import struct
+import numpy as np
+
+
+def load_mnist(path, kind='train'):
     """Loads MNIST data from the path.
        Returns images, a num_samples by num_features numpy array, and labels, the corresponding label of each sample.
        Source: Sebastian Raska, Python Machine Learning
@@ -16,6 +21,6 @@ def load_mnist(self, path, kind='train'):
         #the images are 28x28 pixels -> unrolled into a 1d vector
         images = np.fromfile(imgpath, dtype=np.uint8).reshape(len(labels), 784)
 
-    self.images = images
-    self.labels = labels
+    images = images
+    labels = labels
     return images, labels

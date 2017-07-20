@@ -31,12 +31,12 @@ class NeuralNetwork(object):
         self.l2 = l2
         self.momentum_const = momentum_const
         self.minibatch = minibatch
-        self.epochs = 250
+        self.epochs = epochs
         self.dropout = dropout
         self.dropout_rate = dropout_rate
 
-        self.w1
-        self.w2
+        self.w1 = np.zeros((2,3))
+        self.w2 = np.zeros((2,3))
 
     def init_weights(self, L_in, L_out):
         """
@@ -57,14 +57,14 @@ class NeuralNetwork(object):
         onehot = np.zeros((size, y.shape[0]))
         for i in range(y.shape[0]):
             onehot[y[i], i] = 1.0
-        return y
+        return onehot
 
     def softmax(self, w):
         """ TODO: compute derivative
         Computes vector wise softmax NOTE: has no derivative
         """
         logC = -np.max(w)
-        return np.exp(v + logC)/np.sum(np.exp(v + logC), axis=0)
+        return np.exp(w + logC)/np.sum(np.exp(w + logC), axis=0)
 
     def sigmoid(self, w, derivative=False):
         """
@@ -101,7 +101,8 @@ class NeuralNetwork(object):
 
         when applied, selects a percentage of layer to zero
         """
-        drop_mask = np.random.binomial(1, self.dropout_rate, size=layer.shape)
+        drop_mask = np.random.binomial(1, self.dropout_rate,
+                size=layer.shape).astype('uint8')
         layer *= drop_mask
         return layer
 
@@ -112,7 +113,6 @@ class NeuralNetwork(object):
         outout: the probabilities calculated with  forwardProp
         w1: weights from input layer to hidden layer
         w2: weights from hidden layer to input layer
-        fdsalkjfsa
 
         Derives difference in output and y, and calculates a cost
         """
@@ -194,14 +194,12 @@ class NeuralNetwork(object):
         Trains a neural net with these inputs by learning weights
         """
 
-        X_data = X.copy()
-        y_data = y.copy()
-        y_onehot = self.one_hot(y_data, self.output_size)
+        y_onehot = self.one_hot(y, self.output_size)
         self.w1 = self.init_weights(self.input_size, self.hidden_size)
         self.w2 = self.init_weights(self.hidden_size, self.output_size)
 
         # split the data into mini-batches
-        X_split = np.array_split(X_data, self.minibatch)
+        X_split = np.array_split(X, self.minibatch)
         y_split = np.array_split(y_onehot, self.minibatch)
 
         # Implementation of Gradient Descent
@@ -210,9 +208,9 @@ class NeuralNetwork(object):
             self.learning_rate = self.learning_rate / (1 + self.decay_rate * epoch)
             for i in range(len(X_split)):
                 # feed forward and get back the activations
-                a1, z2, a2, z3, a3 = self.forward_prop(X_split[i], self.w1, self.w2)
+                a1, z2, a2, z3, a3 = self.forwardProp(X_split[i], self.w1, self.w2)
                 # Get the cost
-                cost = self.get_cost(y_split[i], output=a3, w1=self.w1, w2=self.w2)
+                cost = self.getCost(y_split[i], output=a3, w1=self.w1, w2=self.w2)
                 # compute the gradients of the weights
                 grad1, grad2 = self.backProp(a1, a2, a3, z2, y_split[i],
                                              self.w1, self.w2)
@@ -224,7 +222,7 @@ class NeuralNetwork(object):
                 self.w2 += ((self.learning_rate/m) * self.w2)
 
                 if (i+1) % 50 == 0:
-                    accuracy = self.accuracy(X_data, y_data)
+                    accuracy = self.accuracy(X, y)
                     print("Epoch: %d, Iteration: %d, Loss: %d, Accuracy: %d",
                             (epoch, i, cost, accuracy))
 
@@ -237,7 +235,7 @@ class NeuralNetwork(object):
         Returns matrix of predictions of highest probablility
         """
 
-        X_data = X.copy()
+        X = X.copy()
         a1, z2, a2, z3, a3 = self.forwardProp(X, self.w1, self.w2, dropout=False)
         pred = np.argmax(a3, axis=0)
         return pred
