@@ -11,7 +11,7 @@ def main():
             'input_size': X_train.shape[1],
             'hidden_size': 50,
             'output_size': 10,
-            'learning_rate': 0.01,
+            'learning_rate': 0.003,
             'decay_rate': 0.00001,
             'l2': 0.1,
             'minibatch': 500,

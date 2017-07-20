@@ -1,0 +1,4 @@
+*.pyc
+neuralnets/
+test.py
+test_neural.py

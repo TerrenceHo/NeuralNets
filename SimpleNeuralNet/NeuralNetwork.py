@@ -1,3 +1,4 @@
+from activations import *
 import numpy as np
 
 
@@ -43,7 +44,7 @@ class NeuralNetwork(object):
         initializes thetas with random but uniform weights between -1 and 1
         """
         w = np.random.uniform(-1.0, 1.0, size=(
-            L_out * (L_in + 1))).reshape(L_out, L_in + 1)
+            (L_in + 1) * L_out)).reshape(L_in + 1, L_out)
 
         return w
 
@@ -59,41 +60,6 @@ class NeuralNetwork(object):
             onehot[y[i], i] = 1.0
         return onehot.T
 
-    def softmax(self, w):
-        """ TODO: compute derivative
-        Computes vector wise softmax NOTE: has no derivative
-        """
-        # logC = -np.max(w)
-        w -= np.max(w)
-        return np.exp(w)/np.sum(np.exp(w), axis=0)
-
-    def sigmoid(self, w, derivative=False):
-        """
-        Computers vector wise sigmoid or its derivative
-        """
-        d = 1.0/(1.0 + np.exp(-w))
-        if derivative:
-            return d * (1 - d)
-        return d
-
-    def tanh(self, w, derivative=False):
-        """
-        Computes vector wise tanh or its derivative
-        """
-        if derivative:
-            return 1 - np.square(np.tanh(w))
-        return np.tanh(w)
-
-    def relu(self, w, derivative=False):
-        """
-        Computes vector wise relu func or its derivative
-        """
-        if derivative:
-            deriv = w
-            deriv[deriv <= 0] = 0
-            deriv[deriv > 0] = 1
-            return deriv
-        return np.maximum(w, 0)
 
     def dropout_layer(self, layer):
         """
@@ -172,13 +138,14 @@ class NeuralNetwork(object):
         Backpropagates the error back through the neural network
         """
         m = y_onehot.shape[0]
+        # print(a3.shape, y_onehot.shape)
         # calculate derivatives
         d3 = a3 - y_onehot
-        d2 = self.relu(z2, True) * d3.dot(w2[:, 1:])
+        d2 = self.tanh(z2, True) * d3.dot(w2[:, 1:])
 
         # calculate gradients
-        grad1 = d2.T.dot(a1) * (1/m)
-        grad2 = d3.T.dot(a2) * (1/m)
+        grad1 = d2.T.dot(a1)
+        grad2 = d3.T.dot(a2)
 
         # regularizing the gradient
         grad1[:, 1:] += (w1[:, 1:] * self.l2)
@@ -194,7 +161,7 @@ class NeuralNetwork(object):
 
         Trains a neural net with these inputs by learning weights
         """
-        
+
         m = X.shape[0]
         y_onehot = self.one_hot(y, self.output_size)
         self.w1 = self.init_weights(self.input_size, self.hidden_size)
@@ -216,17 +183,34 @@ class NeuralNetwork(object):
                 # compute the gradients of the weights
                 grad1, grad2 = self.backProp(a1, a2, a3, z2, y_split[i],
                                              self.w1, self.w2)
+		# Check gradients
+		h = 1e-5
+		w1_h = self.w1 + h
+		_, _, _, _, out1 = self.forwardProp(X_split[i], w1_h, self.w2,
+			False)
+		w1_h = self.w1 - h
+		_, _, _, _, out2 = self.forwardProp(X_split[i], w1_h, self.w2,
+			False)
+		numerical_deriv_1 = (out1 - out2) /float(2 * h)
+		analytical = np.sum(grad1)
+		numerical = np.sum(numerical_deriv_1)
+		w1_grad_error = np.abs(analytical - numerical) / np.max(
+			np.abs(analytical), np.abs(numerical))
+		# print("Gradient Error: {}".format(w1_grad_error))
+
+
                 # Remove the bias term of the weights
                 self.w1[:, 0] = 0
                 self.w2[:, 0] = 0
-                # Update the weights 
-                self.w1 += ((self.learning_rate/m) * self.w1)
-                self.w2 += ((self.learning_rate/m) * self.w2)
+                # Update the weights  w += -alpha * gradient
+                self.w1 += (-self.learning_rate) * grad1
+                self.w2 += (-self.learning_rate) * grad2
 
                 if (i+1) % 50 == 0:
                     accuracy = self.accuracy(X, y)
                     print("Epoch: %d, Iteration: %d, Loss: %d, Accuracy: %d" %
-                            (epoch, i, cost, accuracy))
+                            (epoch, i + 1, cost, accuracy))
+	    print(self.w1, self.w2)
 
     def predict(self, X):
         """
