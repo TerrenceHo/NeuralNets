@@ -57,14 +57,15 @@ class NeuralNetwork(object):
         onehot = np.zeros((size, y.shape[0]))
         for i in range(y.shape[0]):
             onehot[y[i], i] = 1.0
-        return onehot
+        return onehot.T
 
     def softmax(self, w):
         """ TODO: compute derivative
         Computes vector wise softmax NOTE: has no derivative
         """
-        logC = -np.max(w)
-        return np.exp(w + logC)/np.sum(np.exp(w + logC), axis=0)
+        # logC = -np.max(w)
+        w -= np.max(w)
+        return np.exp(w)/np.sum(np.exp(w), axis=0)
 
     def sigmoid(self, w, derivative=False):
         """
@@ -141,17 +142,17 @@ class NeuralNetwork(object):
         # insert a bias
         a1 = np.insert(X, 0, values=np.ones(m), axis=1)
         # dropout
-        if self.dropout and dropout:
-            a1 = self.dropout_layer(a1)
+        # if self.dropout and dropout:
+        #     a1 = self.dropout_layer(a1)
         # multiply input + bias by weight1
         z2 = a1.dot(w1.T)
         # apply activation function
-        a2 = self.relu(z2)
+        a2 = self.tanh(z2)
         # add bias to the hidden layer
         a2 = np.insert(a2, 0, values=np.ones(m), axis=1)
         # dropout
-        if self.dropout and dropout:
-            a2 = self.dropout_layer(a2)
+        # if self.dropout and dropout:
+        #     a2 = self.dropout_layer(a2)
         # multiply hidden layer + bias by weight 2
         z3 = a2.dot(w2.T)
         # apply activation function
@@ -173,15 +174,15 @@ class NeuralNetwork(object):
         m = y_onehot.shape[0]
         # calculate derivatives
         d3 = a3 - y_onehot
-        d2 = w2[:, 1:].T.dot(d3) * self.relu(z2, True)
+        d2 = self.relu(z2, True) * d3.dot(w2[:, 1:])
 
         # calculate gradients
         grad1 = d2.T.dot(a1) * (1/m)
         grad2 = d3.T.dot(a2) * (1/m)
 
         # regularizing the gradient
-        grad1 += (w1[:, 1:] * self.l2)
-        grad2 += (w2[:, 1:] * self.l2)
+        grad1[:, 1:] += (w1[:, 1:] * self.l2)
+        grad2[:, 1:] += (w2[:, 1:] * self.l2)
 
         # return gradients
         return grad1, grad2
@@ -193,7 +194,8 @@ class NeuralNetwork(object):
 
         Trains a neural net with these inputs by learning weights
         """
-
+        
+        m = X.shape[0]
         y_onehot = self.one_hot(y, self.output_size)
         self.w1 = self.init_weights(self.input_size, self.hidden_size)
         self.w2 = self.init_weights(self.hidden_size, self.output_size)
@@ -223,7 +225,7 @@ class NeuralNetwork(object):
 
                 if (i+1) % 50 == 0:
                     accuracy = self.accuracy(X, y)
-                    print("Epoch: %d, Iteration: %d, Loss: %d, Accuracy: %d",
+                    print("Epoch: %d, Iteration: %d, Loss: %d, Accuracy: %d" %
                             (epoch, i, cost, accuracy))
 
     def predict(self, X):
@@ -235,9 +237,8 @@ class NeuralNetwork(object):
         Returns matrix of predictions of highest probablility
         """
 
-        X = X.copy()
         a1, z2, a2, z3, a3 = self.forwardProp(X, self.w1, self.w2, dropout=False)
-        pred = np.argmax(a3, axis=0)
+        pred = np.argmax(a3, axis=1)
         return pred
 
     def accuracy(self, X, y):

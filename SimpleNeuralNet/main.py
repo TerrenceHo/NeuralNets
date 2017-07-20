@@ -1,15 +1,11 @@
 import numpy as np
-import NeuralNetwork 
+import NeuralNetwork
 from load import *
 
 
 def main():
     X_train, y_train = load_mnist('./data')
     X_test, y_test = load_mnist('./data', 't10k')
-    print(X_train.shape)
-    print(y_train.shape)
-    print(X_test.shape)
-    print(y_test.shape)
 
     parameters = {
             'input_size': X_train.shape[1],
