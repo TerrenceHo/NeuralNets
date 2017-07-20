@@ -223,6 +223,11 @@ class NeuralNetwork(object):
                 self.w1 += ((self.learning_rate/m) * self.w1)
                 self.w2 += ((self.learning_rate/m) * self.w2)
 
+                if (i+1) % 50 == 0:
+                    accuracy = self.accuracy(X_data, y_data)
+                    print("Epoch: %d, Iteration: %d, Loss: %d, Accuracy: %d",
+                            (epoch, i, cost, accuracy))
+
     def predict(self, X):
         """
         X: matrix of training data, with dimensions of samples X input_size
@@ -236,3 +241,19 @@ class NeuralNetwork(object):
         a1, z2, a2, z3, a3 = self.forwardProp(X, self.w1, self.w2, dropout=False)
         pred = np.argmax(a3, axis=0)
         return pred
+
+    def accuracy(self, X, y):
+        """
+        Predicts the accuracy by passing X through neural net and computing a
+        score
+
+        X: input data
+        y: target classes
+        """
+        y_pred = self.predict(X)
+        diffs = y_pred - y
+        count = 0
+        for i in range(y_pred.shape[0]):
+            if diffs[i] != 0:
+                count += 1
+        return 100 - ((count * 100)/y_pred.shape[0])
