@@ -59,19 +59,72 @@ class NeuralNetwork(object):
             onehot[y[i], i] = 1.0
         return y
 
-    def sigmoid(self, w):
-        return 1.0/(1 + np.exp(-w))
+    def softmax(self, w):
+        """ TODO: compute derivative
+        Computes vector wise softmax NOTE: has no derivative
+        """
+        logC = -np.max(w)
+        return np.exp(v + logC)/np.sum(np.exp(v + logC), axis=0)
+
+    def sigmoid(self, w, derivative=False):
+        """
+        Computers vector wise sigmoid or its derivative
+        """
+        d = 1.0/(1.0 + np.exp(-w))
+        if derivative:
+            return d * (1 - d)
+        return d
+
+    def tanh(self, w, derivative=False):
+        """
+        Computes vector wise tanh or its derivative
+        """
+        if derivative:
+            return 1 - np.square(np.tanh(w))
+        return np.tanh(w)
+
+    def relu(self, w, derivative=False):
+        """
+        Computes vector wise relu func or its derivative
+        """
+        if derivative:
+            deriv = w
+            deriv[deriv <= 0] = 0
+            deriv[deriv > 0] = 1
+            return deriv
+        return np.maximum(w, 0)
 
     def dropout_layer(self, layer):
         """
-        layer:  np array which has already has had an activation function applied
-            to it
+        layer:  np array which has already has had an activation function
+            applied to it
 
         when applied, selects a percentage of layer to zero
         """
         drop_mask = np.random.binomial(1, self.dropout_rate, size=layer.shape)
         layer *= drop_mask
         return layer
+
+    def getCost(self, y, output, w1, w2):
+        """
+        y: one-hot encoded class labels for a section of data that was just
+            passed through the forwardProp func
+        outout: the probabilities calculated with  forwardProp
+        w1: weights from input layer to hidden layer
+        w2: weights from hidden layer to input layer
+        fdsalkjfsa
+
+        Derives difference in output and y, and calculates a cost
+        """
+
+        m = y.shape[0]
+        # L2 regularization
+        w1Reg = np.sum(np.square(w1[:, 1:]))
+        w2Reg = np.sum(np.square(w2[:, 1:]))
+        r = 0.5 * self.l2 * (w1Reg + w2Reg)
+        # Calculating loss and adding regularization (sigmoid cross entropy)
+        J = -np.sum(y * np.log(output)) + r
+        return J/m
 
     def forwardProp(self, X, w1, w2, dropout=True):
         """
@@ -93,7 +146,7 @@ class NeuralNetwork(object):
         # multiply input + bias by weight1
         z2 = a1.dot(w1.T)
         # apply activation function
-        a2 = self.sigmoid(z2)
+        a2 = self.relu(z2)
         # add bias to the hidden layer
         a2 = np.insert(a2, 0, values=np.ones(m), axis=1)
         # dropout
@@ -102,30 +155,36 @@ class NeuralNetwork(object):
         # multiply hidden layer + bias by weight 2
         z3 = a2.dot(w2.T)
         # apply activation function
-        a3 = self.sigmoid(z3)
+        a3 = self.softmax(z3)
         return a1, z2, a2, z2, a3
 
-    # def backProp():
-
-    def getCost(self, y, output, w1, w2):
+    def backProp(self, a1, a2, a3, z2, y_onehot, w1, w2):
         """
-        y: one-hot encoded class labels for a section of data that was just
-            passed through the forwardProp func
-        outout: the probabilities calculated with  forwardProp
-        w1: weights from input layer to hidden layer
-        w2: weights from hidden layer to input layer
-        fdsalkjfsa
+        a1: array of num_samples * input_size + 1 (input activation)
+        a2: array of num_samples * hidden_size + 1 (hidden activation)
+        a3: array of num_samples * output_size + 1 (output activation)
+        z2: input of hidden layer
+        y_onehot: class labels encoded in onehot form
+        w1: weight matrix of input to hidden layer
+        w2: weight matrix of hidden to output layer
 
-        Derives difference in output and y, and calculates a cost
+        Backpropagates the error back through the neural network
         """
+        m = y_onehot.shape[0]
+        # calculate derivatives
+        d3 = a3 - y_onehot
+        d2 = w2[:, 1:].T.dot(d3) * self.relu(z2, True)
 
-        m = y.shape[0]
-        w1Reg = np.sum(np.square(w1[:, 1:]))
-        w2Reg = np.sum(np.square(w2[:, 1:]))
-        r = (self.learning_rate/(2*m)) * (w1Reg + w2Reg)
-        J = (1/m) * np.sum( (-1 * y * np.log(output)) -
-                     ((1-y) * np.log(1 - output) ) ) + r
-        return J
+        # calculate gradients
+        grad1 = d2.T.dot(a1) * (1/m)
+        grad2 = d3.T.dot(a2) * (1/m)
+
+        # regularizing the gradient
+        grad1 += (w1[:, 1:] * self.l2)
+        grad2 += (w2[:, 1:] * self.l2)
+
+        # return gradients
+        return grad1, grad2
 
     def fit(self, X, y):
         """
@@ -147,14 +206,33 @@ class NeuralNetwork(object):
 
         # Implementation of Gradient Descent
         for epoch in range(self.epochs):
+            # Decay the learning Rate
+            self.learning_rate = self.learning_rate / (1 + self.decay_rate * epoch)
             for i in range(len(X_split)):
+                # feed forward and get back the activations
                 a1, z2, a2, z3, a3 = self.forward_prop(X_split[i], self.w1, self.w2)
+                # Get the cost
                 cost = self.get_cost(y_split[i], output=a3, w1=self.w1, w2=self.w2)
-                grad1, grad2 = self.backProp()
+                # compute the gradients of the weights
+                grad1, grad2 = self.backProp(a1, a2, a3, z2, y_split[i],
+                                             self.w1, self.w2)
+                # Remove the bias term of the weights
+                self.w1[:, 0] = 0
+                self.w2[:, 0] = 0
+                # Update the weights 
+                self.w1 += ((self.learning_rate/m) * self.w1)
+                self.w2 += ((self.learning_rate/m) * self.w2)
 
     def predict(self, X):
         """
         X: matrix of training data, with dimensions of samples X input_size
+
         After training a model with fit, predict with those same weights it
         just learned with
+        Returns matrix of predictions of highest probablility
         """
+
+        X_data = X.copy()
+        a1, z2, a2, z3, a3 = self.forwardProp(X, self.w1, self.w2, dropout=False)
+        pred = np.argmax(a3, axis=0)
+        return pred
