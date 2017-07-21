@@ -168,6 +168,8 @@ class NeuralNetwork(object):
         Trains a neural net with these inputs by learning weights
         """
 
+        print("Fitting Data")
+
         m = X.shape[0]
         y_onehot = self.one_hot(y, self.output_size)
         self.w1 = self.init_weights(self.input_size, self.hidden_size)
@@ -180,6 +182,7 @@ class NeuralNetwork(object):
         # Implementation of Gradient Descent
         for epoch in range(self.epochs):
             for i in range(len(X_split)):
+                print(i)
                 # feed forward and get back the activations
                 a1, z2, a2, z3, a3 = self.forwardProp(X_split[i], self.w1, self.w2)
                 # Get the cost
@@ -246,6 +249,7 @@ class NeuralNetwork(object):
         y: target classes
         """
         y_pred = self.predict(X).reshape(-1, 1)
+        print(y_pred.shape, y.shape)
         diffs = y_pred - y
         count = 0
         for i in range(y_pred.shape[0]):

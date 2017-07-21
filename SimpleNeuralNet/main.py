@@ -4,8 +4,12 @@ from load import *
 
 
 def main():
+    print("Starting Training")
+    
     X_train, y_train = load_mnist('./data')
     X_test, y_test = load_mnist('./data', 't10k')
+    y_train.reshape(-1, 1)
+    y_test.reshape(-1, 1)
 
     parameters = {
             'input_size': X_train.shape[1],
