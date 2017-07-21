@@ -7,7 +7,7 @@ Softmax does not include derivatives, because it should only be used for the
 last layer since it is numerically unsable
 """
 
-def softmax(self, w):
+def softmax(w):
     """ TODO: compute derivative
     Computes vector wise softmax NOTE: has no derivative
     """
@@ -15,7 +15,7 @@ def softmax(self, w):
     w -= np.max(w)
     return np.exp(w)/np.sum(np.exp(w), axis=0)
 
-def sigmoid(self, w, derivative=False):
+def sigmoid(w, derivative=False):
     """
     Computes vector wise sigmoid or its derivative
     """
@@ -24,7 +24,7 @@ def sigmoid(self, w, derivative=False):
         return d * (1 - d)
     return d
 
-def tanh(self, w, derivative=False):
+def tanh(w, derivative=False):
     """
     Computes vector wise tanh or its derivative
     """
@@ -32,7 +32,7 @@ def tanh(self, w, derivative=False):
         return 1 - np.square(np.tanh(w))
     return np.tanh(w)
 
-def relu(self, w, derivative=False):
+def relu(w, derivative=False):
     """
     Computes vector wise relu func or its derivative
     """

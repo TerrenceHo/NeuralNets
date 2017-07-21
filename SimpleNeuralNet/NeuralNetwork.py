@@ -23,7 +23,9 @@ class NeuralNetwork(object):
     """
     def __init__(self, input_size, output_size, hidden_size=50,
                  learning_rate=0.01, decay_rate=0.0, l2=0.0, momentum_const=0.0,
-                 minibatch=1, epochs=250, dropout=False, dropout_rate=0.0):
+                 minibatch=1, epochs=250, dropout=False, dropout_rate=0.0,
+                 check_gradients=False):
+
         self.input_size = input_size
         self.output_size = output_size
         self.hidden_size = hidden_size
@@ -35,6 +37,7 @@ class NeuralNetwork(object):
         self.epochs = epochs
         self.dropout = dropout
         self.dropout_rate = dropout_rate
+        self.check_gradients = check_gradients
 
         self.w1 = np.zeros((2,3))
         self.w2 = np.zeros((2,3))
@@ -111,18 +114,18 @@ class NeuralNetwork(object):
         # if self.dropout and dropout:
         #     a1 = self.dropout_layer(a1)
         # multiply input + bias by weight1
-        z2 = a1.dot(w1.T)
+        z2 = a1.dot(w1)
         # apply activation function
-        a2 = self.tanh(z2)
+        a2 = tanh(z2)
         # add bias to the hidden layer
         a2 = np.insert(a2, 0, values=np.ones(m), axis=1)
         # dropout
         # if self.dropout and dropout:
         #     a2 = self.dropout_layer(a2)
         # multiply hidden layer + bias by weight 2
-        z3 = a2.dot(w2.T)
+        z3 = a2.dot(w2)
         # apply activation function
-        a3 = self.softmax(z3)
+        a3 = softmax(z3)
         return a1, z2, a2, z2, a3
 
     def backProp(self, a1, a2, a3, z2, y_onehot, w1, w2):
@@ -138,10 +141,11 @@ class NeuralNetwork(object):
         Backpropagates the error back through the neural network
         """
         m = y_onehot.shape[0]
-        # print(a3.shape, y_onehot.shape)
-        # calculate derivatives
+
+        # calculate difference between outputs and targets
         d3 = a3 - y_onehot
-        d2 = self.tanh(z2, True) * d3.dot(w2[:, 1:])
+        # Calculate the difference in the hidden layer 
+        d2 = tanh(z2, True) * d3.dot(w2[:, 1:])
 
         # calculate gradients
         grad1 = d2.T.dot(a1)
@@ -183,20 +187,21 @@ class NeuralNetwork(object):
                 # compute the gradients of the weights
                 grad1, grad2 = self.backProp(a1, a2, a3, z2, y_split[i],
                                              self.w1, self.w2)
-		# Check gradients
-		h = 1e-5
-		w1_h = self.w1 + h
-		_, _, _, _, out1 = self.forwardProp(X_split[i], w1_h, self.w2,
-			False)
-		w1_h = self.w1 - h
-		_, _, _, _, out2 = self.forwardProp(X_split[i], w1_h, self.w2,
-			False)
-		numerical_deriv_1 = (out1 - out2) /float(2 * h)
-		analytical = np.sum(grad1)
-		numerical = np.sum(numerical_deriv_1)
-		w1_grad_error = np.abs(analytical - numerical) / np.max(
-			np.abs(analytical), np.abs(numerical))
-		# print("Gradient Error: {}".format(w1_grad_error))
+                if self.check_gradients:
+                    # Check gradients
+                    h = 1e-5
+                    w1_h = self.w1 + h
+                    _, _, _, _, out1 = self.forwardProp(X_split[i], w1_h, self.w2,
+                            False)
+                    w1_h = self.w1 - h
+                    _, _, _, _, out2 = self.forwardProp(X_split[i], w1_h, self.w2,
+                            False)
+                    numerical_deriv_1 = (out1 - out2) /float(2 * h)
+                    analytical = np.sum(grad1)
+                    numerical = np.sum(numerical_deriv_1)
+                    w1_grad_error = np.abs(analytical - numerical) / np.max(
+                            np.abs(analytical), np.abs(numerical))
+                    # print("Gradient Error: {}".format(w1_grad_error))
 
 
                 # Remove the bias term of the weights
