@@ -1,4 +1,5 @@
 from activations import *
+from random import shuffle
 import numpy as np
 
 
@@ -94,6 +95,7 @@ class NeuralNetwork(object):
         r = 0.5 * self.l2 * (w1Reg + w2Reg)
         # Calculating loss and adding regularization (sigmoid cross entropy)
         J = -np.sum(y * np.log(output)) + r
+        # print("cost ", J)
         return J/m
 
     def forwardProp(self, X, w1, w2, dropout=True):
@@ -145,20 +147,20 @@ class NeuralNetwork(object):
         # calculate difference between outputs and targets
         d3 = a3 - y_onehot
         # Calculate the difference in the hidden layer 
-        d2 = tanh(z2, True) * d3.dot(w2[:, 1:])
+        d2 = tanh(z2, True) * d3.dot(w2.T[:, 1:])
 
         # calculate gradients
-        grad1 = d2.T.dot(a1)
-        grad2 = d3.T.dot(a2)
+        grad1 = a1.T.dot(d2)
+        grad2 = a2.T.dot(d3)
 
-        # regularizing the gradient
-        grad1[:, 1:] += (w1[:, 1:] * self.l2)
-        grad2[:, 1:] += (w2[:, 1:] * self.l2)
+        # regularizing the gradient, but not the bias term
+        grad1[1:, :] += (w1[1:, :] * self.l2)
+        grad2[1:, :] += (w2[1:, :] * self.l2)
 
         # return gradients
         return grad1, grad2
 
-    def fit(self, X, y):
+    def fit(self, X, y, print_progress=False):
         """
         X: matrix of training data, with dimensions of samples X input_size
         y: array containing target data, [1,2,3,4]
@@ -177,8 +179,6 @@ class NeuralNetwork(object):
 
         # Implementation of Gradient Descent
         for epoch in range(self.epochs):
-            # Decay the learning Rate
-            self.learning_rate = self.learning_rate / (1 + self.decay_rate * epoch)
             for i in range(len(X_split)):
                 # feed forward and get back the activations
                 a1, z2, a2, z3, a3 = self.forwardProp(X_split[i], self.w1, self.w2)
@@ -205,17 +205,24 @@ class NeuralNetwork(object):
 
 
                 # Remove the bias term of the weights
-                self.w1[:, 0] = 0
-                self.w2[:, 0] = 0
+                self.w1[0, :] = 0
+                self.w2[0, :] = 0
                 # Update the weights  w += -alpha * gradient
-                self.w1 += (-self.learning_rate) * grad1
-                self.w2 += (-self.learning_rate) * grad2
+                self.w1 += ((-self.learning_rate) * grad1)
+                self.w2 += ((-self.learning_rate) * grad2)
 
-                if (i+1) % 50 == 0:
-                    accuracy = self.accuracy(X, y)
-                    print("Epoch: %d, Iteration: %d, Loss: %d, Accuracy: %d" %
-                            (epoch, i + 1, cost, accuracy))
-	    print(self.w1, self.w2)
+            # Decay the learning Rate
+            self.learning_rate = self.learning_rate / (1 + self.decay_rate * epoch)
+            # Shuffle the mini-batches 
+            combined = list(zip(X_split, y_split))
+            shuffle(combined)
+            X_split[:], y_split[:] = zip(*combined)
+
+            if print_progress and (epoch + 1) % 25 == 0 or epoch < 25:
+                accuracy = self.accuracy(X, y)
+                print("=======================================================")
+                print("Epoch: %d, Loss: %d, Accuracy: %d" %
+                        (epoch + 1, cost, accuracy))
 
     def predict(self, X):
         """
@@ -238,7 +245,7 @@ class NeuralNetwork(object):
         X: input data
         y: target classes
         """
-        y_pred = self.predict(X)
+        y_pred = self.predict(X).reshape(-1, 1)
         diffs = y_pred - y
         count = 0
         for i in range(y_pred.shape[0]):

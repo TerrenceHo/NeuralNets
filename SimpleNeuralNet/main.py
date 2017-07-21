@@ -15,12 +15,12 @@ def main():
             'decay_rate': 0.00001,
             'l2': 0.1,
             'minibatch': 500,
-            'epochs': 5000,
+            'epochs': 1000,
             'dropout': True,
             'dropout_rate': 0.5,
         }
     nn = NeuralNetwork.NeuralNetwork(**parameters)
-    nn.fit(X_train, y_train)
+    nn.fit(X_train, y_train, True)
     accuracy = nn.accuracy(X_test, y_test)
     print(accuracy)
 
