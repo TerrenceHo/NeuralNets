@@ -1,7 +1,6 @@
-from activations import *
-from random import shuffle
 import numpy as np
-
+from random import shuffle
+from activations import *
 
 class NeuralNetwork(object):
     """
@@ -20,13 +19,13 @@ class NeuralNetwork(object):
     TODO
     nesterov
     different forms of optimizers
-
     """
+
     def __init__(self, input_size, output_size, hidden_size=50,
                  learning_rate=0.01, decay_rate=0.0, l2=0.0, momentum_const=0.0,
                  minibatch=1, epochs=250, dropout=False, dropout_rate=0.0,
                  check_gradients=False):
-
+        # Hyper parameters
         self.input_size = input_size
         self.output_size = output_size
         self.hidden_size = hidden_size
@@ -40,23 +39,22 @@ class NeuralNetwork(object):
         self.dropout_rate = dropout_rate
         self.check_gradients = check_gradients
 
-        self.w1 = np.zeros((2,3))
-        self.w2 = np.zeros((2,3))
+        # initialize weights
+        self.w1 = self.init_weights(self.input_size, self.hidden_size)
+        self.w2 = self.init_weights(self.hidden_size, self.output_size)
 
     def init_weights(self, L_in, L_out):
         """
         initializes thetas with random but uniform weights between -1 and 1
         """
         w = np.random.uniform(-1.0, 1.0, size=(
-            (L_in + 1) * L_out)).reshape(L_in + 1, L_out)
-
+            L_out * (L_in + 1) )).reshape(L_out, L_in+1)
         return w
 
     def one_hot(self, y, size):
         """
         y: np array of numbers
         size: number of classes inside y
-
         This method converts y into a onehot version of itself
         """
         onehot = np.zeros((size, y.shape[0]))
@@ -64,73 +62,71 @@ class NeuralNetwork(object):
             onehot[y[i], i] = 1.0
         return onehot.T
 
+    def add_bias_unit(self, X, column=True):
+        """Adds a bias unit to our inputs"""
+        if column:
+            bias_added = np.ones((X.shape[0], X.shape[1] + 1))
+            bias_added[:, 1:] = X
+        else:
+            bias_added = np.ones((X.shape[0] + 1, X.shape[1]))
+            bias_added[1:, :] = X
 
-    def dropout_layer(self, layer):
+        return bias_added
+
+    def compute_dropout(self, activations):
         """
-        layer:  np array which has already has had an activation function
-            applied to it
-
-        when applied, selects a percentage of layer to zero
+        Sets half of the activations to zero
+        Params: activations - numpy array
+        Return: activations, which half set to zero
         """
-        drop_mask = np.random.binomial(1, self.dropout_rate,
-                size=layer.shape).astype('uint8')
-        layer *= drop_mask
-        return layer
+        mult = np.random.binomial(1, self.dropout_rate, size = activations.shape)
+        activations*=mult
+        return activations
 
-    def getCost(self, y, output, w1, w2):
-        """
-        y: one-hot encoded class labels for a section of data that was just
-            passed through the forwardProp func
-        outout: the probabilities calculated with  forwardProp
-        w1: weights from input layer to hidden layer
-        w2: weights from hidden layer to input layer
 
-        Derives difference in output and y, and calculates a cost
-        """
+    def get_cost(self, y_enc, output, w1, w2):
+        """ Compute the cost function.
+            Params:
+            y_enc: array of num_labels x num_samples. class labels one-hot encoded
+            output: matrix of output_units x samples - activation of output layer from feedforward
+            w1: weight matrix of input to hidden layer
+            w2: weight matrix of hidden to output layer
+            """
+        cost = - np.sum(y_enc*np.log(output))
+        # add the L2 regularization by taking the L2-norm of the weights and multiplying it with our constant.
+        l2_term = (self.l2/2.0) * (np.sum(np.square(w1[:, 1:])) + np.sum(np.square(w2[:, 1:])))
+        cost = cost + l2_term
+        return cost/y_enc.shape[1]
 
-        m = y.shape[0]
-        # L2 regularization
-        w1Reg = np.sum(np.square(w1[:, 1:]))
-        w2Reg = np.sum(np.square(w2[:, 1:]))
-        r = 0.5 * self.l2 * (w1Reg + w2Reg)
-        # Calculating loss and adding regularization (sigmoid cross entropy)
-        J = -np.sum(y * np.log(output)) + r
-        # print("cost ", J)
-        return J/m
-
-    def forwardProp(self, X, w1, w2, dropout=True):
+    def forwardProp(self, X, w1, w2, dropout = True):
         """
         X: input np array
         w1: matrix of weights from input layer to hidden layer
         w2: matrix of weights from hidden layer to output layer
         dropout: If true, will apply dropout_rate to each layer
-
         Feeds forwards the inputs to output layer and then returns both weights
-        all three layers for backpropagation later
+        all three layers for backPropagation later
         """
-        # Shape of array for bias
-        m = X.shape[0]
-        # insert a bias
-        a1 = np.insert(X, 0, values=np.ones(m), axis=1)
-        # dropout
-        # if self.dropout and dropout:
-        #     a1 = self.dropout_layer(a1)
-        # multiply input + bias by weight1
-        z2 = a1.dot(w1)
-        # apply activation function
+        # Insert a bias, which is the activation for the input layer
+        a1 = self.add_bias_unit(X)
+        # compute dropout
+        if self.dropout and dropout: a1 = self.compute_dropout(a1)
+        # apply weights to inputs for a linear transformation
+        z2 = a1.dot(w1.T)
+        # Activation function which maps values between 0 and 1
         a2 = tanh(z2)
-        # add bias to the hidden layer
-        a2 = np.insert(a2, 0, values=np.ones(m), axis=1)
+        #add a bias unit to activation of the hidden layer.
+        a2 = self.add_bias_unit(a2)
         # dropout
-        # if self.dropout and dropout:
-        #     a2 = self.dropout_layer(a2)
-        # multiply hidden layer + bias by weight 2
-        z3 = a2.dot(w2)
-        # apply activation function
+        if self.dropout and dropout: a2 = self.compute_dropout(a2)
+        # apply weights to the hidden layer for a linear transformation
+        z3 = a2.dot(w2.T)
+        # the activation of our output layer is just the softmax function.
+        # activation function for the output layer
         a3 = softmax(z3)
-        return a1, z2, a2, z2, a3
+        return a1, z2, a2, z3, a3
 
-    def backProp(self, a1, a2, a3, z2, y_onehot, w1, w2):
+    def backProp(self, a1, a2, a3, z2, y_enc, w1, w2):
         """
         a1: array of num_samples * input_size + 1 (input activation)
         a2: array of num_samples * hidden_size + 1 (hidden activation)
@@ -139,95 +135,70 @@ class NeuralNetwork(object):
         y_onehot: class labels encoded in onehot form
         w1: weight matrix of input to hidden layer
         w2: weight matrix of hidden to output layer
-
-        Backpropagates the error back through the neural network
+        backPropagates the error back through the neural network
         """
-        m = y_onehot.shape[0]
-
-        # calculate difference between outputs and targets
-        d3 = a3 - y_onehot
-        # Calculate the difference in the hidden layer 
-        d2 = tanh(z2, True) * d3.dot(w2.T[:, 1:])
-
-        # calculate gradients
-        grad1 = a1.T.dot(d2)
-        grad2 = a2.T.dot(d3)
-
-        # regularizing the gradient, but not the bias term
-        grad1[1:, :] += (w1[1:, :] * self.l2)
-        grad2[1:, :] += (w2[1:, :] * self.l2)
-
-        # return gradients
+        #backPropagate our error
+        sigma3 = a3 - y_enc
+        sigma2 = sigma3.dot(w2[:,1:]) * tanh(z2, derivative=True)
+        #get rid of the bias row
+        grad1 = sigma2.T.dot(a1)
+        grad2 = sigma3.T.dot(a2)
+         # add the regularization term
+        grad1[:, 1:]+= (w1[:, 1:]*self.l2) # derivative of .5*l2*w1^2
+        grad2[:, 1:]+= (w2[:, 1:]*self.l2) # derivative of .5*l2*w2^2
         return grad1, grad2
 
-    def fit(self, X, y, print_progress=False):
+
+    def fit(self, X, y, print_progress=True):
+        """ Learn weights from training data
+            Params:
+            X: matrix of samples x features. Input layer
+            y: target class labels of the training instances (ex: y = [1, 3, 4, 4, 3])
+            print_progress: True if you want to see the loss and training accuracy, but it is expensive.
         """
-        X: matrix of training data, with dimensions of samples X input_size
-        y: array containing target data, [1,2,3,4]
+        X_data, y_data = X.copy(), y.copy()
 
-        Trains a neural net with these inputs by learning weights
-        """
+        y_enc = self.one_hot(y_data, self.output_size)
+        X_split = np.array_split(X_data, self.minibatch)
+        y_split = np.array_split(y_enc, self.minibatch)
+        # PREVIOUS GRADIENTS
+        prev_grad_w1 = np.zeros(self.w1.shape)
+        prev_grad_w2 = np.zeros(self.w2.shape)
 
-        print("Fitting Data")
-
-        m = X.shape[0]
-        y_onehot = self.one_hot(y, self.output_size)
-        self.w1 = self.init_weights(self.input_size, self.hidden_size)
-        self.w2 = self.init_weights(self.hidden_size, self.output_size)
-
-        # split the data into mini-batches
-        X_split = np.array_split(X, self.minibatch)
-        y_split = np.array_split(y_onehot, self.minibatch)
-
-        # Implementation of Gradient Descent
+        #pass through the dataset
         for epoch in range(self.epochs):
-            for i in range(len(X_split)):
-                print(i)
-                # feed forward and get back the activations
+            self.learning_rate /= (1 + self.decay_rate*epoch)
+            for i in range(len(X_split)): # Feed each minibatch
+                #feed feedforward
                 a1, z2, a2, z3, a3 = self.forwardProp(X_split[i], self.w1, self.w2)
-                # Get the cost
-                cost = self.getCost(y_split[i], output=a3, w1=self.w1, w2=self.w2)
-                # compute the gradients of the weights
-                grad1, grad2 = self.backProp(a1, a2, a3, z2, y_split[i],
-                                             self.w1, self.w2)
-                if self.check_gradients:
-                    # Check gradients
-                    h = 1e-5
-                    w1_h = self.w1 + h
-                    _, _, _, _, out1 = self.forwardProp(X_split[i], w1_h, self.w2,
-                            False)
-                    w1_h = self.w1 - h
-                    _, _, _, _, out2 = self.forwardProp(X_split[i], w1_h, self.w2,
-                            False)
-                    numerical_deriv_1 = (out1 - out2) /float(2 * h)
-                    analytical = np.sum(grad1)
-                    numerical = np.sum(numerical_deriv_1)
-                    w1_grad_error = np.abs(analytical - numerical) / np.max(
-                            np.abs(analytical), np.abs(numerical))
-                    # print("Gradient Error: {}".format(w1_grad_error))
+                cost = self.get_cost(y_split[i], output=a3, w1=self.w1, w2=self.w2)
 
+                #compute gradient via backpropagation
+                grad1, grad2 = self.backProp(a1=a1, a2=a2, a3=a3, z2=z2,
+                        y_enc=y_split[i], w1=self.w1, w2=self.w2)
+                # update parameters, multiplying by learning rate + momentum constants
+                w1_update = self.learning_rate*grad1
+                w2_update = self.learning_rate*grad2
+                # gradient update: w += -alpha * gradient.
+                # use momentum - add in previous gradient mutliplied by a momentum hyperparameter.
+                self.w1 += -(w1_update + (self.momentum_const*prev_grad_w1))
+                self.w2 += -(w2_update + (self.momentum_const*prev_grad_w2))
+                prev_grad_w1, prev_grad_w2 = w1_update, w2_update
 
-                # Remove the bias term of the weights
-                self.w1[0, :] = 0
-                self.w2[0, :] = 0
-                # Update the weights  w += -alpha * gradient
-                self.w1 += ((-self.learning_rate) * grad1)
-                self.w2 += ((-self.learning_rate) * grad2)
-
-            # Decay the learning Rate
-            self.learning_rate = self.learning_rate / (1 + self.decay_rate * epoch)
-            # Shuffle the mini-batches 
+            # Shuffle list after each epoch, to keep it random
             combined = list(zip(X_split, y_split))
             shuffle(combined)
             X_split[:], y_split[:] = zip(*combined)
+            #print progress
+            if print_progress and (epoch+1) % 50==0:
+                print("Epoch: " + str(epoch+1))
+                print("Loss: " + str(cost))
+                acc = self.accuracy(X_data, y_data)
+                print("Training Accuracy: " + str(acc))
 
-            if print_progress and (epoch + 1) % 25 == 0 or epoch < 25:
-                accuracy = self.accuracy(X, y)
-                print("=======================================================")
-                print("Epoch: %d, Loss: %d, Accuracy: %d" %
-                        (epoch + 1, cost, accuracy))
+        return self
 
-    def predict(self, X):
+    def predict(self, X, dropout = False):
         """
         X: matrix of training data, with dimensions of samples X input_size
 
@@ -235,9 +206,8 @@ class NeuralNetwork(object):
         just learned with
         Returns matrix of predictions of highest probablility
         """
-
-        a1, z2, a2, z3, a3 = self.forwardProp(X, self.w1, self.w2, dropout=False)
-        pred = np.argmax(a3, axis=1)
+        a1, z2, a2, z3, a3 = self.forwardProp(X, self.w1, self.w2, dropout = False)
+        pred = np.argmax(a3, axis = 1)
         return pred
 
     def accuracy(self, X, y):
@@ -248,11 +218,12 @@ class NeuralNetwork(object):
         X: input data
         y: target classes
         """
-        y_pred = self.predict(X).reshape(-1, 1)
-        print(y_pred.shape, y.shape)
+        y_pred = self.predict(X)
         diffs = y_pred - y
-        count = 0
-        for i in range(y_pred.shape[0]):
+        count = 0.0
+        for i in range(y.shape[0]):
             if diffs[i] != 0:
-                count += 1
-        return 100 - ((count * 100)/y_pred.shape[0])
+                count+=1
+        return 100 - count*100/y.shape[0]
+
+

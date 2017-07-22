@@ -2,3 +2,6 @@
 neuralnets/
 test.py
 test_neural.py
+.ipynb_checkpoints/
+exp/
+__pyacache__/
