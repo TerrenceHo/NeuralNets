@@ -142,9 +142,11 @@ class NeuralNetwork(object):
         backPropagates the error back through the neural network
         """
         #backPropagate our error
+        # tells us the direction to move in
         sigma3 = a3 - y_enc
         sigma2 = sigma3.dot(w2[:,1:]) * sigmoid(z2, derivative=True)
-        #get rid of the bias row
+
+        # calculate the amounts needed to move
         grad1 = sigma2.T.dot(a1)
         grad2 = sigma3.T.dot(a2)
          # add the regularization term
@@ -152,8 +154,7 @@ class NeuralNetwork(object):
         grad2[:, 1:]+= (w2[:, 1:]*self.l2) # derivative of .5*l2*w2^2
         return grad1, grad2
 
-
-    def fit(self, X, y, print_progress=True):
+    def fit(self, X, y, print_progress=True, check_gradients=True):
         """ Learn weights from training data
             Params:
             X: matrix of samples x features. Input layer
@@ -180,6 +181,10 @@ class NeuralNetwork(object):
                 #compute gradient via backpropagation
                 grad1, grad2 = self.backProp(a1=a1, a2=a2, a3=a3, z2=z2,
                         y_enc=y_split[i], w1=self.w1, w2=self.w2)
+
+                # Check Gradients
+                if check_gradients: self.check_num_gradients(X_split[i], grad1)
+
                 # update parameters, multiplying by learning rate + momentum constants
                 w1_update = self.learning_rate*grad1
                 w2_update = self.learning_rate*grad2
@@ -201,6 +206,18 @@ class NeuralNetwork(object):
                 print("Training Accuracy: " + str(acc))
 
         return self
+
+    def check_num_gradients(self, X_data, grad_w1):
+        h = 1e-6
+        _, _, _, _, out1 = self.forwardProp(X_data, self.w1 + h, self.w2, dropout=False)
+        _, _, _, _, out2 = self.forwardProp(X_data, self.w1 - h, self.w2, dropout=False)
+        num_grad = (out1 - out2)/float(2 * h)
+        num_grad = np.sum(num_grad)
+        analytical_grad = np.sum(grad_w1)
+        error = np.abs(analytical_grad -
+                num_grad)/max(np.abs(analytical_grad), np.abs(num_grad))
+        print("Gradient Error: {}".format(error))
+
 
     def predict(self, X, dropout = False):
         """
