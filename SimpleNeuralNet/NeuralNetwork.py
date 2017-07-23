@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 from random import shuffle
 from activations import *
 
@@ -92,11 +93,15 @@ class NeuralNetwork(object):
             w1: weight matrix of input to hidden layer
             w2: weight matrix of hidden to output layer
             """
-        cost = - np.sum(y_enc*np.log(output))
+        # Cost derived from Tensorflow docs, which should guarantee stability
+        cost = -np.sum(np.nan_to_num(y_enc*np.log(output)))
+        # if np.isnan(cost) == True:
+        #     sys.exit()
+
         # add the L2 regularization by taking the L2-norm of the weights and multiplying it with our constant.
         l2_term = (self.l2/2.0) * (np.sum(np.square(w1[:, 1:])) + np.sum(np.square(w2[:, 1:])))
-        cost = cost + l2_term
-        return cost/y_enc.shape[1]
+        cost = cost + (l2_term/2.0)
+        return cost/y_enc.shape[0]
 
     def forwardProp(self, X, w1, w2, dropout = True):
         """
@@ -114,16 +119,15 @@ class NeuralNetwork(object):
         # apply weights to inputs for a linear transformation
         z2 = a1.dot(w1.T)
         # Activation function which maps values between 0 and 1
-        a2 = tanh(z2)
+        a2 = sigmoid(z2)
         #add a bias unit to activation of the hidden layer.
         a2 = self.add_bias_unit(a2)
         # dropout
         if self.dropout and dropout: a2 = self.compute_dropout(a2)
         # apply weights to the hidden layer for a linear transformation
         z3 = a2.dot(w2.T)
-        # the activation of our output layer is just the softmax function.
         # activation function for the output layer
-        a3 = softmax(z3)
+        a3 = sigmoid(z3)
         return a1, z2, a2, z3, a3
 
     def backProp(self, a1, a2, a3, z2, y_enc, w1, w2):
@@ -139,7 +143,7 @@ class NeuralNetwork(object):
         """
         #backPropagate our error
         sigma3 = a3 - y_enc
-        sigma2 = sigma3.dot(w2[:,1:]) * tanh(z2, derivative=True)
+        sigma2 = sigma3.dot(w2[:,1:]) * sigmoid(z2, derivative=True)
         #get rid of the bias row
         grad1 = sigma2.T.dot(a1)
         grad2 = sigma3.T.dot(a2)
