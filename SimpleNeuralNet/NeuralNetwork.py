@@ -1,57 +1,177 @@
+# Std Libs
 import numpy as np
+import matplotlib.pyplot as plt
+
+# Custom Libs
 from activations import *
+from cost_functions import *
+from layers import *
 
-class NeuralNetwork:
+
+class NeuralNetwork(object):
     """
-    Class that holds neural network parameters
+    Class that holds Neural Network parameters
     """
 
-    def __init__(self, n_x, n_h, n_y, learning_rate):
-        self.n_x = n_x
-        self.n_h = n_h
-        self.n_y = n_y
-        self.parameters = self.__init_random_weights(n_x, n_h, n_y)
+    def __init__(self):
+        """ 
+        Initializes Neural Network Object
 
-    def __init_random_weights(n_x, n_h, n_y):
-        w1 = np.random.rand(n_h, n_x) * 0.01
-        b1 = np.zeros((n_h, 1))
-        w2 = np.random.rand(n_y, n_h) * 0.01
-        b1 = np.zeros((n_y, 1))
-        parameters =  {
-                "W1":w1,
-                "B1":b1,
-                "W2":w2,
-                "B2":b2
-            }
+        Fields:
+        parameters -- dictionary of weights and biases
+                        Wl -- weight matrix of shape (layer_dims[l], layer_dims[l-1])
+                        bl -- bias vector of shape (layer_dims[l], 1)
+        costs -- list of all computed costs
+        """
+
+        self.parameters = {}
+        self.costs = []
+
+    def initialize_parameters(self, layer_dims):
+        """
+        Arguments:
+        layer_dims -- python array (list) containing the dimensions of each layer in our network
+
+        Returns:
+        parameters -- python dictionary containing your parameters "W1", "b1", ..., "WL", "bL":
+                        Wl -- weight matrix of shape (layer_dims[l], layer_dims[l-1])
+                        bl -- bias vector of shape (layer_dims[l], 1)
+        """
+
+        np.random.seed(3) # keep same parameters
+        parameters = {}
+        L = len(layer_dims)            # number of layers in the network
+
+        for l in range(1, L):
+            parameters['W' + str(l)] = np.random.randn(layer_dims[l], layer_dims[l-1]) * 0.01
+            parameters['b' + str(l)] = np.zeros((layer_dims[l], 1))
+
+            assert(parameters['W' + str(l)].shape == (layer_dims[l], layer_dims[l-1]))
+            assert(parameters['b' + str(l)].shape == (layer_dims[l], 1))
+
         return parameters
 
-    def GradientDescent(self, X, Y, learning_rate, epochs):
-        for i in range(epochs):
-            activations, cache = self.ForwardProp(X)
-            cost = self.CrossEntropyLoss()
-            grads = self.BackPropagation(activations, cache)
+    def Fit(self, X, Y, layer_dims, learning_rate = 0.0075,
+            num_iterations=3000, print_cost = False):
+        """
+        Function that fits weights to the dataset X and labels Y given.
 
-    def ForwardPropagation(self, X):
-        return 0
+        Arguments:
+        X -- dataset to train with and label
+        Y -- labels for each example in dataset
+        layer_dims -- list of layer sizes for each hidden layer. Size of list
+            determines number of layers for neural network
+        learning_rate -- step rate at which network updates its parameters.
+            Default: 0.0075
+        num_iterations -- How many epochs or iterations to train over dataset.
+            Default: 3000
+        print_cost -- Bool to decide whether or not to print cost. Default: False
+        """
 
-    def BackPropagation(self, activations, cache):
-        return 0
+        self.parameters = self.initialize_parameters(layer_dims)
+        self.GradientDescent(X, Y, learning_rate, num_iterations, print_cost)
 
-    def CrossEntropyLoss(self, Y_pred, Y):
-        return 0
+
+    def GradientDescent(self, X, Y, learning_rate = 0.0075, num_iterations =
+            3000, print_cost = False):
+        """
+        Applies Gradient Descent to update parameters and lower cost function
+
+        Arguments:
+        X -- dataset to train with and label
+        Y -- labels for each example in dataset
+        learning_rate -- step rate at which network updates its parameters.
+            Default: 0.0075
+        num_iterations -- How many epochs or iterations to train over dataset.
+            Default: 3000
+        print_cost -- Bool to decide whether or not to print cost. Default: False
+        """
+
+        for i in range(num_iterations):
+            AL, caches = L_model_forward(X, self.parameters)
+            cost = Cross_Entropy_Loss(AL, Y)
+            grads = L_model_backward(AL, Y, caches)
+            self.parameter = self.Update_Parameters(self.parameters, grads, learning_rate)
+
+            if print_cost and i % 100 == 0:
+                print ("Cost after iteration %i: %f" %(i, cost))
+                self.costs.append(cost)
+
+    def Update_Parameters(self, parameters, grads, learning_rate):
+	"""
+	Update parameters using gradient descent
+
+	Arguments:
+	parameters -- python dictionary containing your parameters 
+	grads -- python dictionary containing your gradients, output of L_model_backward
+
+	Returns:
+	parameters -- python dictionary containing your updated parameters 
+                        parameters["W" + str(l)] = ... 
+                        parameters["b" + str(l)] = ...
+	"""
+
+	L = len(parameters) // 2 # number of layers in the neural network
+
+	# Update rule for each parameter. Use a for loop.
+	for l in range(L):
+            parameters["W" + str(l+1)] = parameters["W" + str(l+1)] - learning_rate * grads["dW" + str(l+1)]
+            parameters["b" + str(l+1)] = parameters["b" + str(l+1)] - learning_rate * grads["db" + str(l+1)]
+
+	return parameters
 
     def Predict(self, X):
-        activations, cache = self.ForwardProp(X)
-        A2 = activations[-1]
-        A2[A2 >= 0.5] = 1
-        A2[A2 < 0.5] = 0
-        return A2
+        """
+        This function is used to predict the results of a  L-layer neural network.
 
-    def Score(self, X, Y):
+        Arguments:
+        X -- data set of examples you would like to label
+
+        Returns:
+        p -- predictions for the given dataset X
+        """
+
+        m = X.shape[1]
+        n = len(self.parameters) // 2 # number of layers in the neural network
+        p = np.zeros((1,m))
+
+        # Forward propagation
+        probas, caches = L_model_forward(X, self.parameters)
+
+        # convert probas to 0/1 predictions
+        for i in range(0, probas.shape[1]):
+            if probas[0,i] > 0.5:
+                p[0,i] = 1
+            else:
+                p[0,i] = 0
+        return p
+
+    def Score(self, X, Y, print_accuracy=True):
+        """
+        This function is used to computer accuracy of the neural network
+
+        Arguments:
+        X -- dataset of test data you would like to predict and label
+        Y -- dataset of the test labels you would like to predict on
+        print_accuracy -- bool to print out computed accuracy. Default: True
+
+        Returns:
+        Y_Pred -- Predictions for given dataset X
+        Score -- Score for given dataset X and labels Y
+        """
+        m = X.shape[1]
+
+        # Get Predictions
         Y_pred = self.Predict(X)
-        diffs = Y_pred - Y
-        count = 0.0
-        for i in range(y.shape[1]):
-            if diffs[i] != 0:
-                count += 1
-        return 100 - count*100/y.shape[1]
+        Score = np.sum((Y_pred == Y)/m)
+
+        if print_accuracy:
+            print("Accuracy: "  + str(Score))
+        return Y_pred, Score
+
+    def Graph_Costs_Over_Time(self):
+        plt.plot(np.squeeze(self.costs))
+        plt.ylabel('cost')
+        plt.xlabel('iterations (per tens)')
+        plt.title("Learning rate =" + str(learning_rate))
+        plt.show()

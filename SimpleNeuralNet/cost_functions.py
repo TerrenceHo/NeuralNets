@@ -1,21 +1,20 @@
-def cross_entropy_loss(y_enc, output, weights, l2):
-    """ Compute the cost function.
-        Params:
-        y_enc: array of num_labels x num_samples. class labels one-hot encoded
-        output: matrix of output_units x samples - activation of output layer from feedforward
-        w1: weight matrix of input to hidden layer
-        w2: weight matrix of hidden to output layer
-        """
-    cost = -np.sum(y_enc*np.nan_to_num(np.log(output)))
-    # if np.isnan(cost) == True:
-    #     sys.exit()
+import numpy as np
 
-    # add the L2 regularization by taking the L2-norm of the weights and multiplying it with our constant.
-    l2_term = 0
-    # (self.l2/2.0) * (np.sum(np.square(w1[:, 1:])) + np.sum(np.square(w2[:, 1:])))
-    for i in range(len(weights)):
-        l2_term += (lf.l2/2.0) * (np.sum(np.square(weights[i][1:,:])))
+def Cross_Entropy_Loss(AL, Y):
+    """
+    Implement the cross entropy cost function.
 
-    cost += l2_term
-    return cost/y_enc.shape[0]
+    Arguments:
+    AL -- probability vector corresponding to your label predictions, shape (1, number of examples)
+    Y -- true "label" vector (for example: containing 0 if non-cat, 1 if cat), shape (1, number of examples)
 
+    Returns:
+    cost -- cross-entropy cost
+    """
+    
+    m = Y.shape[1]
+    # Compute loss from aL and y.
+    cost = (1./m) * (-np.dot(Y,np.log(AL).T) - np.dot(1-Y, np.log(1-AL).T))
+    cost = np.squeeze(cost)      # To make sure your cost's shape is what we expect (e.g. this turns [[17]] into 17).
+    assert(cost.shape == ())
+    return cost
