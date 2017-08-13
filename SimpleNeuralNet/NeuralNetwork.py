@@ -38,12 +38,12 @@ class NeuralNetwork(object):
                         bl -- bias vector of shape (layer_dims[l], 1)
         """
 
-        np.random.seed(3) # keep same parameters
+        np.random.seed(1) # keep same parameters
         parameters = {}
         L = len(layer_dims)            # number of layers in the network
 
         for l in range(1, L):
-            parameters['W' + str(l)] = np.random.randn(layer_dims[l], layer_dims[l-1]) * 0.01
+            parameters['W' + str(l)] = np.random.randn(layer_dims[l], layer_dims[l-1]) / np.sqrt(layer_dims[l-1])
             parameters['b' + str(l)] = np.zeros((layer_dims[l], 1))
 
             assert(parameters['W' + str(l)].shape == (layer_dims[l], layer_dims[l-1]))
@@ -98,27 +98,27 @@ class NeuralNetwork(object):
                 self.costs.append(cost)
 
     def Update_Parameters(self, parameters, grads, learning_rate):
-	"""
-	Update parameters using gradient descent
+        """
+        Update parameters using gradient descent
 
-	Arguments:
-	parameters -- python dictionary containing your parameters 
-	grads -- python dictionary containing your gradients, output of L_model_backward
+        Arguments:
+        parameters -- python dictionary containing your parameters 
+        grads -- python dictionary containing your gradients, output of L_model_backward
 
-	Returns:
-	parameters -- python dictionary containing your updated parameters 
+        Returns:
+        parameters -- python dictionary containing your updated parameters 
                         parameters["W" + str(l)] = ... 
                         parameters["b" + str(l)] = ...
-	"""
+        """
 
-	L = len(parameters) // 2 # number of layers in the neural network
+        L = len(parameters) // 2 # number of layers in the neural network
 
-	# Update rule for each parameter. Use a for loop.
-	for l in range(L):
+        # Update rule for each parameter. Use a for loop.
+        for l in range(L):
             parameters["W" + str(l+1)] = parameters["W" + str(l+1)] - learning_rate * grads["dW" + str(l+1)]
             parameters["b" + str(l+1)] = parameters["b" + str(l+1)] - learning_rate * grads["db" + str(l+1)]
 
-	return parameters
+        return parameters
 
     def Predict(self, X):
         """
