@@ -11,7 +11,8 @@ class NeuralNetwork(object):
     Class that holds Neural Network parameters
     """
 
-    def __init__(self, layers_dims, init_method, learning_rate = 0.0075, num_iterations=3000):
+    def __init__(self, layers_dims, init_method, learning_rate = 0.0075,
+            num_iterations=3000, lambd = 0.1, reg_method='l2'):
         """ 
         Initializes Neural Network Object
 
@@ -23,6 +24,8 @@ class NeuralNetwork(object):
             parameters. Default = 0.0075
         num_iterations -- number of iterations the dataset will be passed over
             for.  Default = 3000
+        lambd -- regularization parameter.  Default = 0.1
+        reg_method -- Regularization method to use. Default = 'l2'
 
         Fields:
         parameters -- dictionary of weights and biases
@@ -36,6 +39,8 @@ class NeuralNetwork(object):
         self.layers_dims = layers_dims
         self.learning_rate = learning_rate
         self.num_iterations = num_iterations
+        self.lambd = lambd
+        self.reg_method = reg_method
 
     def Initialize_Parameters(self, layers_dims, method=0.01):
         """
@@ -96,7 +101,8 @@ class NeuralNetwork(object):
             raise ValueError("Output layer dimensions do not match previously given output layer dimensions")
 
         self.parameters, self.costs = GradientDescent(X, Y, self.parameters,
-                self.costs, self.learning_rate, self.num_iterations, print_cost)
+                self.costs, self.learning_rate, self.num_iterations, self.lambd,
+                self.reg_method, print_cost)
 
     def Predict(self, X):
         """
@@ -148,6 +154,10 @@ class NeuralNetwork(object):
         return Y_pred, Score
 
     def Graph_Costs_Over_Time(self):
+        """
+        This function takes the list of costs saved in the Neural Network object
+        and plots them onto a graph
+        """
         plt.plot(np.squeeze(self.costs))
         plt.ylabel('cost')
         plt.xlabel('iterations (per tens)')

@@ -4,7 +4,7 @@ from layers import *
 from cost_functions import *
 
 def GradientDescent(X, Y, parameters, costs, learning_rate = 0.0075, num_iterations =
-        3000, print_cost = False):
+        3000, lambd=0.1, reg_method='l2', print_cost = False):
     """
     Applies Gradient Descent to update parameters and lower cost function
 
@@ -20,6 +20,9 @@ def GradientDescent(X, Y, parameters, costs, learning_rate = 0.0075, num_iterati
     num_iterations -- How many epochs or iterations to train over dataset.
         Default: 3000
     print_cost -- Bool to decide whether or not to print cost. Default: False
+    lambd -- regularization parameter, if zero there is not regularization.
+        Default: 0.1
+    method -- which regularization method to use. Default: l2
 
     Returns:
     parameters -- dictionary of weights and biases
@@ -30,7 +33,7 @@ def GradientDescent(X, Y, parameters, costs, learning_rate = 0.0075, num_iterati
 
     for i in range(num_iterations):
         AL, caches = L_model_forward(X, parameters)
-        cost = Cross_Entropy_Loss(AL, Y)
+        cost = Cross_Entropy_Loss(AL, Y, parameters, lambd, reg_method)
         grads = L_model_backward(AL, Y, caches)
         parameters = Update_Parameters(parameters, grads, learning_rate)
 
