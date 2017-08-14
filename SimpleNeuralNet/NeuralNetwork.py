@@ -3,9 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Custom Libs
-from activations import *
-from cost_functions import *
-from layers import *
+from optimization_functions import *
 
 
 class NeuralNetwork(object):
@@ -13,112 +11,92 @@ class NeuralNetwork(object):
     Class that holds Neural Network parameters
     """
 
-    def __init__(self):
+    def __init__(self, layers_dims, init_method, learning_rate = 0.0075, num_iterations=3000):
         """ 
         Initializes Neural Network Object
 
+        Arguments:
+        init_method -- method used to initialize_parameters.  Can be string or
+            int.  Default = 0.01
+        layers_dims -- list containing dimensions of each layer
+        learning_rate -- rate at which optimization function will change
+            parameters. Default = 0.0075
+        num_iterations -- number of iterations the dataset will be passed over
+            for.  Default = 3000
+
         Fields:
         parameters -- dictionary of weights and biases
-                        Wl -- weight matrix of shape (layer_dims[l], layer_dims[l-1])
-                        bl -- bias vector of shape (layer_dims[l], 1)
+                        Wl -- weight matrix of shape (layers_dims[l], layers_dims[l-1])
+                        bl -- bias vector of shape (layers_dims[l], 1)
         costs -- list of all computed costs
         """
 
-        self.parameters = {}
+        self.parameters = self.Initialize_Parameters(layers_dims, init_method)
         self.costs = []
+        self.layers_dims = layers_dims
+        self.learning_rate = learning_rate
+        self.num_iterations = num_iterations
 
-    def initialize_parameters(self, layer_dims):
+    def Initialize_Parameters(self, layers_dims, method=0.01):
         """
+        Initializes parameters randomly and scales it by var method.  If method
+        == 'He', scale = 2.0/np.sqrt(layers_dims[l-1]).  If method == 'Xavier',
+        scale = 1.0/np.sqrt(layers_dims[l-1].  Else the default is 0.01
+
         Arguments:
-        layer_dims -- python array (list) containing the dimensions of each layer in our network
+        layers_dims -- python array (list) containing the dimensions of each layer in our network
+        method -- string or int dictating how the parameters are initialzed.
+        Default = 0.01
 
         Returns:
         parameters -- python dictionary containing your parameters "W1", "b1", ..., "WL", "bL":
-                        Wl -- weight matrix of shape (layer_dims[l], layer_dims[l-1])
-                        bl -- bias vector of shape (layer_dims[l], 1)
+                        Wl -- weight matrix of shape (layers_dims[l], layers_dims[l-1])
+                        bl -- bias vector of shape (layers_dims[l], 1)
         """
 
         np.random.seed(1) # keep same parameters
         parameters = {}
-        L = len(layer_dims)            # number of layers in the network
+        L = len(layers_dims)            # number of layers in the network
 
         for l in range(1, L):
-            parameters['W' + str(l)] = np.random.randn(layer_dims[l], layer_dims[l-1]) / np.sqrt(layer_dims[l-1])
-            parameters['b' + str(l)] = np.zeros((layer_dims[l], 1))
-
-            assert(parameters['W' + str(l)].shape == (layer_dims[l], layer_dims[l-1]))
-            assert(parameters['b' + str(l)].shape == (layer_dims[l], 1))
+            if isinstance(method, str):
+                if method == 'He':
+                    scale = 2.0/np.sqrt(layers_dims[l-1])
+                elif method == 'Xavier':
+                    scale = 1.0/np.sqrt(layers_dims[l-1])
+                else:
+                    raise AttributeError("Initialization method not found")
+                    return
+            else:
+                scale = method
+            parameters['W' + str(l)] = np.random.randn(layers_dims[l], layers_dims[l-1]) * scale
+            parameters['b' + str(l)] = np.zeros((layers_dims[l], 1))
 
         return parameters
 
-    def Fit(self, X, Y, layer_dims, learning_rate = 0.0075,
-            num_iterations=3000, print_cost = False):
+
+    def Fit(self, X, Y, print_cost=False):
         """
         Function that fits weights to the dataset X and labels Y given.
 
         Arguments:
         X -- dataset to train with and label
         Y -- labels for each example in dataset
-        layer_dims -- list of layer sizes for each hidden layer. Size of list
-            determines number of layers for neural network
-        learning_rate -- step rate at which network updates its parameters.
-            Default: 0.0075
-        num_iterations -- How many epochs or iterations to train over dataset.
-            Default: 3000
         print_cost -- Bool to decide whether or not to print cost. Default: False
         """
 
-        self.parameters = self.initialize_parameters(layer_dims)
-        self.GradientDescent(X, Y, learning_rate, num_iterations, print_cost)
+        # Check dimensions before fitting to optimization function
+        if X.shape[1] != Y.shape[1]:
+            raise ValueError("Number of examples in dataset and labels do not match")
+            return
+        elif X.shape[0] != self.layers_dims[0]:
+            raise ValueError("Input features in dataset do not match previously given input layer dimensions")
+            return
+        elif Y.shape[0] != self.layers_dims[-1]:
+            raise ValueError("Output layer dimensions do not match previously given output layer dimensions")
 
-
-    def GradientDescent(self, X, Y, learning_rate = 0.0075, num_iterations =
-            3000, print_cost = False):
-        """
-        Applies Gradient Descent to update parameters and lower cost function
-
-        Arguments:
-        X -- dataset to train with and label
-        Y -- labels for each example in dataset
-        learning_rate -- step rate at which network updates its parameters.
-            Default: 0.0075
-        num_iterations -- How many epochs or iterations to train over dataset.
-            Default: 3000
-        print_cost -- Bool to decide whether or not to print cost. Default: False
-        """
-
-        for i in range(num_iterations):
-            AL, caches = L_model_forward(X, self.parameters)
-            cost = Cross_Entropy_Loss(AL, Y)
-            grads = L_model_backward(AL, Y, caches)
-            self.parameter = self.Update_Parameters(self.parameters, grads, learning_rate)
-
-            if print_cost and i % 100 == 0:
-                print ("Cost after iteration %i: %f" %(i, cost))
-                self.costs.append(cost)
-
-    def Update_Parameters(self, parameters, grads, learning_rate):
-        """
-        Update parameters using gradient descent
-
-        Arguments:
-        parameters -- python dictionary containing your parameters 
-        grads -- python dictionary containing your gradients, output of L_model_backward
-
-        Returns:
-        parameters -- python dictionary containing your updated parameters 
-                        parameters["W" + str(l)] = ... 
-                        parameters["b" + str(l)] = ...
-        """
-
-        L = len(parameters) // 2 # number of layers in the neural network
-
-        # Update rule for each parameter. Use a for loop.
-        for l in range(L):
-            parameters["W" + str(l+1)] = parameters["W" + str(l+1)] - learning_rate * grads["dW" + str(l+1)]
-            parameters["b" + str(l+1)] = parameters["b" + str(l+1)] - learning_rate * grads["db" + str(l+1)]
-
-        return parameters
+        self.parameters, self.costs = GradientDescent(X, Y, self.parameters,
+                self.costs, self.learning_rate, self.num_iterations, print_cost)
 
     def Predict(self, X):
         """
@@ -173,5 +151,5 @@ class NeuralNetwork(object):
         plt.plot(np.squeeze(self.costs))
         plt.ylabel('cost')
         plt.xlabel('iterations (per tens)')
-        plt.title("Learning rate =" + str(learning_rate))
+        plt.title("Learning rate =" + str(self.learning_rate))
         plt.show()
