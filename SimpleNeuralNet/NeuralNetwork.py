@@ -11,8 +11,9 @@ class NeuralNetwork(object):
     Class that holds Neural Network parameters
     """
 
-    def __init__(self, layers_dims, init_method, learning_rate = 0.0075,
-            num_iterations=3000, lambd = 0.1, reg_method='l2'):
+    def __init__(self, layers_dims, init_method, activation_funcs,
+            cost_function, reg_type, reg_lambd=0.1, learning_rate = 0.0075,
+            num_iterations=3000):
         """ 
         Initializes Neural Network Object
 
@@ -27,7 +28,7 @@ class NeuralNetwork(object):
         lambd -- regularization parameter.  Default = 0.1
         reg_method -- Regularization method to use. Default = 'l2'
 
-        Fields:
+        Additional Fields:
         parameters -- dictionary of weights and biases
                         Wl -- weight matrix of shape (layers_dims[l], layers_dims[l-1])
                         bl -- bias vector of shape (layers_dims[l], 1)
@@ -37,10 +38,12 @@ class NeuralNetwork(object):
         self.parameters = self.Initialize_Parameters(layers_dims, init_method)
         self.costs = []
         self.layers_dims = layers_dims
+        self.activation_funcs = activation_funcs
+        self.cost_func = cost_func
+        self.reg_type = reg_type
+        self.reg_lambd = reg_lambd
         self.learning_rate = learning_rate
         self.num_iterations = num_iterations
-        self.lambd = lambd
-        self.reg_method = reg_method
 
     def Initialize_Parameters(self, layers_dims, method=0.01):
         """
@@ -101,8 +104,9 @@ class NeuralNetwork(object):
             raise ValueError("Output layer dimensions do not match previously given output layer dimensions")
 
         self.parameters, self.costs = GradientDescent(X, Y, self.parameters,
-                self.costs, self.learning_rate, self.num_iterations, self.lambd,
-                self.reg_method, print_cost)
+                self.costs, self.activation_funcs, self.cost_func,
+                self.reg_type, self.reg_lambd, self.learning_rate, 
+                self.num_iterations, print_cost)
 
     def Predict(self, X):
         """

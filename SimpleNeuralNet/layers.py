@@ -38,20 +38,21 @@ def linear_activation_forward(A_prev, W, b, activation):
              stored for computing the backward pass efficiently
     """
     Z, linear_cache = linear_forward(A_prev, W, b)
+    A, activation_cache = activation(None, Z)
     
-    if activation == "sigmoid":
-        # Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
-        A, activation_cache = sigmoid(Z)
+    # if activation == "sigmoid":
+    #     # Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
+    #     A, activation_cache = sigmoid(Z)
     
-    elif activation == "relu":
-        # Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
-        A, activation_cache = relu(Z)
+    # elif activation == "relu":
+    #     # Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
+    #     A, activation_cache = relu(Z)
     
     cache = (linear_cache, activation_cache)
 
     return A, cache
 
-def L_model_forward(X, parameters):
+def L_model_forward(X, parameters, activation_funcs):
     """
     Implement forward propagation for the [LINEAR->RELU]*(L-1)->LINEAR->SIGMOID computation
     
@@ -73,7 +74,8 @@ def L_model_forward(X, parameters):
     # Implement [LINEAR -> RELU]*(L-1). Add "cache" to the "caches" list.
     for l in range(1, L):
         A_prev = A 
-        A, cache = linear_activation_forward(A_prev, parameters['W' + str(l)], parameters['b' + str(l)], activation = "relu")
+        A, cache = linear_activation_forward(A_prev, parameters['W' + str(l)],
+                parameters['b' + str(l)], activation = activation_funcs[l-1])
         caches.append(cache)
     
     # Implement LINEAR -> SIGMOID. Add "cache" to the "caches" list.
