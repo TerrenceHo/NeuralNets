@@ -37,18 +37,16 @@ def linear_activation_forward(A_prev, W, b, activation):
     cache -- a python dictionary containing "linear_cache" and "activation_cache";
              stored for computing the backward pass efficiently
     """
+    Z, linear_cache = linear_forward(A_prev, W, b)
     
     if activation == "sigmoid":
         # Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
-        Z, linear_cache = linear_forward(A_prev, W, b)
         A, activation_cache = sigmoid(Z)
     
     elif activation == "relu":
         # Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
-        Z, linear_cache = linear_forward(A_prev, W, b)
         A, activation_cache = relu(Z)
     
-    assert (A.shape == (W.shape[0], A_prev.shape[1]))
     cache = (linear_cache, activation_cache)
 
     return A, cache

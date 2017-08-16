@@ -1,6 +1,6 @@
 import numpy as np
 
-def Cross_Entropy_Loss(AL, Y, parameters, lambd, reg_method):
+def Cross_Entropy_Loss(AL, Y):
     """
     Implement the cross entropy cost function.
 
@@ -17,15 +17,14 @@ def Cross_Entropy_Loss(AL, Y, parameters, lambd, reg_method):
     cost = (1./m) * (-np.dot(Y,np.log(AL).T) - np.dot(1-Y, np.log(1-AL).T))
     cost = np.squeeze(cost)      # To make sure your cost's shape is what we expect (e.g. this turns [[17]] into 17).
     # Add on regularization
-    cost += Regularization(parameters, lambd, m, method=reg_method)
     return cost
 
-def Mean_Squared_Lost(AL, Y, parameters, lambd, reg_method):
+def Mean_Squared_Lost(AL, Y):
     return
 
-def Regularization(parameters, lambd, m, method='l2'):
+def Regularization(parameters, lambd, m):
     """
-    Implemented Regularization to cost functions
+    Implemented Regularization to cost functions. Regularization method is l2
 
     Arguments:
     parameters -- dictionary of weights and biases
@@ -33,8 +32,6 @@ def Regularization(parameters, lambd, m, method='l2'):
                         bl -- bias vector of shape (layers_dims[l], 1)
     lambd -- regularization parameter, if zero there is not regularization
     m -- number of examples
-    method -- which regularization method to use. Default: l2
-        Available: l2
 
     Returns:
     reg -- regularization of weights

@@ -13,4 +13,3 @@
 - Learning Rate Decay
 - Gradient Checks
 - Dropout layers
-
