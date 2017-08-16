@@ -87,15 +87,7 @@ def L_model_forward(X, parameters):
 
 # ===== Backwards Layers =====
 
-def regularization_backward(W, m, lambd = 0.1, reg_method = 'l2'):
-    if reg_method is None:
-        return 0
-    elif reg_method == 'l2':
-        return W * (lambd/m)
-    else: 
-        return 0
-
-def linear_backward(dZ, cache, lambd = 0.1, reg_method = 'l2'):
+def linear_backward(dZ, cache, reg_function):
     """
     Implement the linear portion of backward propagation for a single layer (layer l)
 
@@ -110,7 +102,7 @@ def linear_backward(dZ, cache, lambd = 0.1, reg_method = 'l2'):
     """
     A_prev, W, b = cache
     m = A_prev.shape[1]
-    reg = regularization_backward(W, m, lambd, reg_method)
+    reg = reg_function(W, derivative=True)/m
 
     dW = 1./m * np.dot(dZ,A_prev.T) + reg
     db = 1./m * np.sum(dZ)
@@ -118,7 +110,7 @@ def linear_backward(dZ, cache, lambd = 0.1, reg_method = 'l2'):
     
     return dA_prev, dW, db
 
-def linear_activation_backward(dA, cache, activation, lambd, reg_method):
+def linear_activation_backward(dA, cache, activation, reg_function):
     """
     Implement the backward propagation for the LINEAR->ACTIVATION layer.
     
@@ -139,11 +131,11 @@ def linear_activation_backward(dA, cache, activation, lambd, reg_method):
     elif activation == "sigmoid":
         dZ = sigmoid_backward(dA, activation_cache)
 
-    dA_prev, dW, db = linear_backward(dZ, linear_cache, lambd, reg_method)
+    dA_prev, dW, db = linear_backward(dZ, linear_cache, reg_function)
     
     return dA_prev, dW, db
 
-def L_model_backward(AL, Y, caches, lambd, reg_method):
+def L_model_backward(AL, Y, caches, cost_function, reg_function):
     """
     Implement the backward propagation for the [LINEAR->RELU] * (L-1) -> LINEAR -> SIGMOID group
     
@@ -166,18 +158,18 @@ def L_model_backward(AL, Y, caches, lambd, reg_method):
     Y = Y.reshape(AL.shape) # after this line, Y is the same shape as AL
     
     # Initializing the backpropagation for cross_entropy_loss
-    dAL = - (np.divide(Y, AL) - np.divide(1 - Y, 1 - AL))
+    dAL = cost_function(AL, Y, None, None, derivative=True)
     
     # Lth layer (SIGMOID -> LINEAR) gradients. Inputs: "AL, Y, caches". Outputs: "grads["dAL"], grads["dWL"], grads["dbL"]
     current_cache = caches[L-1]
     grads["dA" + str(L)], grads["dW" + str(L)], grads["db" + str(L)] = \
-    linear_activation_backward(dAL, current_cache, "sigmoid", lambd, reg_method)
+    linear_activation_backward(dAL, current_cache, "sigmoid", reg_function)
     
     for l in reversed(range(L-1)):
         # lth layer: (RELU -> LINEAR) gradients.
         current_cache = caches[l]
         dA_prev_temp, dW_temp, db_temp = linear_activation_backward(grads["dA" +
-            str(l + 2)], current_cache, "relu", lambd, reg_method)
+            str(l + 2)], current_cache, "relu", reg_function)
         grads["dA" + str(l + 1)] = dA_prev_temp
         grads["dW" + str(l + 1)] = dW_temp
         grads["db" + str(l + 1)] = db_temp
