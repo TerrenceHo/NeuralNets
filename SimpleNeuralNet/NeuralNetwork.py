@@ -12,7 +12,7 @@ class NeuralNetwork(object):
     """
 
     def __init__(self, layers_dims, init_method, activation_funcs,
-            cost_function, reg_type, reg_lambd=0.1, learning_rate = 0.0075,
+            cost_func, reg_type, reg_lambd=0.1, learning_rate = 0.0075,
             num_iterations=3000):
         """ 
         Initializes Neural Network Object
@@ -124,7 +124,8 @@ class NeuralNetwork(object):
         p = np.zeros((1,m))
 
         # Forward propagation
-        probas, caches = L_model_forward(X, self.parameters)
+        probas, caches = L_model_forward(X, self.parameters,
+                self.activation_funcs)
 
         # convert probas to 0/1 predictions
         for i in range(0, probas.shape[1]):
