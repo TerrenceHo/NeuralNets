@@ -48,7 +48,7 @@ def linear_activation_forward(A_prev, W, b, activation):
     #     # Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
     #     A, activation_cache = relu(Z)
     
-    cache = (linear_cache, activation_cache)
+    cache = (linear_cache, activation_cache, activation)
 
     return A, cache
 
@@ -113,7 +113,7 @@ def linear_backward(dZ, cache, reg_function):
     
     return dA_prev, dW, db
 
-def linear_activation_backward(dA, cache, activation, reg_function):
+def linear_activation_backward(dA, cache, reg_function):
     """
     Implement the backward propagation for the LINEAR->ACTIVATION layer.
     
@@ -127,14 +127,14 @@ def linear_activation_backward(dA, cache, activation, reg_function):
     dW -- Gradient of the cost with respect to W (current layer l), same shape as W
     db -- Gradient of the cost with respect to b (current layer l), same shape as b
     """
-    linear_cache, activation_cache = cache
+    linear_cache, activation_cache, activation = cache
     dZ = activation(dA, activation_cache, derivative=True)
 
     dA_prev, dW, db = linear_backward(dZ, linear_cache, reg_function)
     
     return dA_prev, dW, db
 
-def L_model_backward(AL, Y, caches, activation_funcs, cost_function, reg_function):
+def L_model_backward(AL, Y, caches, cost_function, reg_function):
     """
     Implement the backward propagation for the [LINEAR->RELU] * (L-1) -> LINEAR -> SIGMOID group
     
@@ -162,13 +162,13 @@ def L_model_backward(AL, Y, caches, activation_funcs, cost_function, reg_functio
     # Lth layer (SIGMOID -> LINEAR) gradients. Inputs: "AL, Y, caches". Outputs: "grads["dAL"], grads["dWL"], grads["dbL"]
     current_cache = caches[L-1]
     grads["dA" + str(L)], grads["dW" + str(L)], grads["db" + str(L)] = \
-    linear_activation_backward(dAL, current_cache, activation_funcs[L-1], reg_function)
+    linear_activation_backward(dAL, current_cache, reg_function)
     
     for l in reversed(range(L - 1)):
         # lth layer: (RELU -> LINEAR) gradients.
         current_cache = caches[l]
         dA_prev_temp, dW_temp, db_temp = linear_activation_backward(grads["dA" +
-            str(l + 2)], current_cache, activation_funcs[l], reg_function)
+            str(l + 2)], current_cache, reg_function)
         grads["dA" + str(l + 1)] = dA_prev_temp
         grads["dW" + str(l + 1)] = dW_temp
         grads["db" + str(l + 1)] = db_temp

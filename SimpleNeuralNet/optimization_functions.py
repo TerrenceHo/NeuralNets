@@ -38,7 +38,7 @@ def GradientDescent(X, Y, parameters, costs, activation_funcs, cost_func,
     for i in range(num_iterations):
         AL, caches = L_model_forward(X, parameters, activation_funcs)
         cost = cost_func(AL, Y, reg_func, parameters)
-        grads = L_model_backward(AL, Y, caches, activation_funcs, Cross_Entropy_Loss, reg_func)
+        grads = L_model_backward(AL, Y, caches, Cross_Entropy_Loss, reg_func)
         parameters = Update_Parameters(parameters, grads, learning_rate)
 
         if print_cost and i % 100 == 0:
