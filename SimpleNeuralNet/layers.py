@@ -2,6 +2,29 @@ import numpy as np
 from activations import *
 
 # ===== Forward Layers ===== 
+def dropout_forward(A, keep_prob):
+    """
+    Implements dropout for one activated layer
+
+    Arguments:
+    A -- activations from previous layer (or input data): (size of previous layer, number of examples)
+    keep_prob -- float from 0.0 to 1.0 that determines how much of a layer to keep
+
+    Returns:
+    A -- activations after applying dropout_layer
+    dropout_cache -- list containing dropout_layer, keep_prob
+        dropout_layer -- vector of A.shape, which determines which activations
+            from A to drop
+        keep_prob -- probability of activations to keep
+    """
+
+    dropout_layer = np.random.rand(A.shape[0], A.shape[1])
+    dropout_layer = dropout_layer < keep_prob
+    A *= dropout_layer
+    A /= keep_prob
+
+    dropout_cache = (dropout_layer, keep_prob)
+    return A, dropout_cache
 
 def linear_forward(A, W, b):
     """
@@ -22,7 +45,7 @@ def linear_forward(A, W, b):
     cache = (A, W, b)
     return Z, cache
 
-def linear_activation_forward(A_prev, W, b, activation):
+def linear_activation_forward(A_prev, W, b, activation, keep_prob):
     """
     Implement the forward propagation for the LINEAR->ACTIVATION layer
 
@@ -30,35 +53,34 @@ def linear_activation_forward(A_prev, W, b, activation):
     A_prev -- activations from previous layer (or input data): (size of previous layer, number of examples)
     W -- weights matrix: numpy array of shape (size of current layer, size of previous layer)
     b -- bias vector, numpy array of shape (size of the current layer, 1)
-    activation -- the activation to be used in this layer, stored as a text string: "sigmoid" or "relu"
+    activation -- the activation to be used in this layer, stored as a function
+    keep_prob -- probability of the layer to be kept during dropout
 
     Returns:
     A -- the output of the activation function, also called the post-activation value 
-    cache -- a python dictionary containing "linear_cache" and "activation_cache";
+    cache -- a python list containing "linear_cache", "activation_cache",
+        activation function, and D(dropout layer);
              stored for computing the backward pass efficiently
     """
     Z, linear_cache = linear_forward(A_prev, W, b)
     A, activation_cache = activation(None, Z)
-    
-    # if activation == "sigmoid":
-    #     # Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
-    #     A, activation_cache = sigmoid(Z)
-    
-    # elif activation == "relu":
-    #     # Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
-    #     A, activation_cache = relu(Z)
-    
-    cache = (linear_cache, activation_cache, activation)
+
+    # Dropout
+    A, dropout_cache = dropout_forward(A, keep_prob)
+
+    cache = (linear_cache, activation_cache, activation, dropout_cache)
 
     return A, cache
 
-def L_model_forward(X, parameters, activation_funcs):
+def L_model_forward(X, parameters, activation_funcs, keep_probs):
     """
     Implement forward propagation for the [LINEAR->RELU]*(L-1)->LINEAR->SIGMOID computation
     
     Arguments:
     X -- data, numpy array of shape (input size, number of examples)
-    parameters -- output of initialize_parameters_deep()
+    parameters -- weights to pass forward
+    activation_funcs -- list of activation functions
+    keep_probs -- list of probabilities of to keep during dropout
     
     Returns:
     AL -- last post-activation value
@@ -75,20 +97,39 @@ def L_model_forward(X, parameters, activation_funcs):
     for l in range(1, L):
         A_prev = A 
         A, cache = linear_activation_forward(A_prev, parameters['W' + str(l)],
-                parameters['b' + str(l)], activation = activation_funcs[l-1])
+                parameters['b' + str(l)], activation_funcs[l-1], keep_probs[l-1])
         caches.append(cache)
     
     # Implement LINEAR -> SIGMOID. Add "cache" to the "caches" list.
     AL, cache = linear_activation_forward(A, parameters['W' + str(L)],
-            parameters['b' + str(L)], activation = activation_funcs[L-1])
+            parameters['b' + str(L)], activation_funcs[L-1], 1.0)
     caches.append(cache)
     
-    assert(AL.shape == (1,X.shape[1]))
-            
     return AL, caches
 
 
 # ===== Backwards Layers =====
+
+def dropout_backwards(dA, dropout_cache):
+    """
+    Applies dropout layer to the same activated to shut down the same neurons as
+    during forward propagation
+
+    Arguments:
+    dA -- derivative of the activated layer
+    dropout_cache -- list containing dropout_layer, keep_prob
+        dropout_layer -- vector of A.shape, which determines which activations
+            from A to drop
+        keep_prob -- probability of activations to keep
+
+    Returns:
+    dA -- derivative layer with dropout applied onto it
+    """
+
+    dropout_layer, keep_prob = dropout_cache
+    dA *= dropout_layer
+    dA /= keep_prob
+    return dA
 
 def linear_backward(dZ, cache, reg_function):
     """
@@ -127,7 +168,8 @@ def linear_activation_backward(dA, cache, reg_function):
     dW -- Gradient of the cost with respect to W (current layer l), same shape as W
     db -- Gradient of the cost with respect to b (current layer l), same shape as b
     """
-    linear_cache, activation_cache, activation = cache
+    linear_cache, activation_cache, activation, dropout_cache = cache
+    dA = dropout_backwards(dA, dropout_cache)
     dZ = activation(dA, activation_cache, derivative=True)
 
     dA_prev, dW, db = linear_backward(dZ, linear_cache, reg_function)
@@ -144,6 +186,8 @@ def L_model_backward(AL, Y, caches, cost_function, reg_function):
     caches -- list of caches containing:
                 every cache of linear_activation_forward() with "relu" (there are (L-1) or them, indexes from 0 to L-2)
                 the cache of linear_activation_forward() with "sigmoid" (there is one, index L-1)
+    cost_function -- function to evaluate cost
+    reg_function -- function to apply regularization to gradients
     
     Returns:
     grads -- A dictionary with the gradients

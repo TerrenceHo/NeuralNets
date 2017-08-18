@@ -11,9 +11,8 @@ class NeuralNetwork(object):
     Class that holds Neural Network parameters
     """
 
-    def __init__(self, layers_dims, init_method, activation_funcs,
-            cost_func, reg_type, reg_lambd=0.1, learning_rate = 0.0075,
-            num_iterations=3000):
+    def __init__(self, init_method, layers_dims, keep_probs, activation_funcs,
+            cost_func, reg_type, reg_lambd=0.1, learning_rate = 0.0075):
         """ 
         Initializes Neural Network Object
 
@@ -21,12 +20,13 @@ class NeuralNetwork(object):
         init_method -- method used to initialize_parameters.  Can be string or
             int.  Default = 0.01
         layers_dims -- list containing dimensions of each layer
+        keep_probs -- list of floats to determine which neurons to shut down
+        activation_funcs -- non-linear functions to activate weights
+        cost_func -- cost function to evaluate performance
+        reg_type -- function that returns a regularization function
+        reg_lambd -- lambd value that determines rate of regularization
         learning_rate -- rate at which optimization function will change
             parameters. Default = 0.0075
-        num_iterations -- number of iterations the dataset will be passed over
-            for.  Default = 3000
-        lambd -- regularization parameter.  Default = 0.1
-        reg_method -- Regularization method to use. Default = 'l2'
 
         Additional Fields:
         parameters -- dictionary of weights and biases
@@ -43,7 +43,7 @@ class NeuralNetwork(object):
         self.reg_type = reg_type
         self.reg_lambd = reg_lambd
         self.learning_rate = learning_rate
-        self.num_iterations = num_iterations
+        self.keep_probs = keep_probs
 
     def Initialize_Parameters(self, layers_dims, method=0.01):
         """
@@ -83,13 +83,14 @@ class NeuralNetwork(object):
         return parameters
 
 
-    def Fit(self, X, Y, print_cost=False):
+    def Fit(self, X, Y, num_iterations, print_cost=False):
         """
         Function that fits weights to the dataset X and labels Y given.
 
         Arguments:
         X -- dataset to train with and label
         Y -- labels for each example in dataset
+        num_iterations -- number of iterations to train for
         print_cost -- Bool to decide whether or not to print cost. Default: False
         """
 
@@ -104,9 +105,9 @@ class NeuralNetwork(object):
             raise ValueError("Output layer dimensions do not match previously given output layer dimensions")
 
         self.parameters, self.costs = GradientDescent(X, Y, self.parameters,
-                self.costs, self.activation_funcs, self.cost_func,
-                self.reg_type, self.reg_lambd, self.learning_rate, 
-                self.num_iterations, print_cost)
+                self.costs, self.activation_funcs, self.keep_probs, self.cost_func,
+                self.reg_type, self.reg_lambd, self.learning_rate,
+                num_iterations, print_cost)
 
     def Predict(self, X):
         """
@@ -122,10 +123,11 @@ class NeuralNetwork(object):
         m = X.shape[1]
         n = len(self.parameters) // 2 # number of layers in the neural network
         p = np.zeros((1,m))
+        keep_probs = [1.0 for keep_prob in self.keep_probs]
 
         # Forward propagation
         probas, caches = L_model_forward(X, self.parameters,
-                self.activation_funcs)
+                self.activation_funcs, keep_probs)
 
         # convert probas to 0/1 predictions
         for i in range(0, probas.shape[1]):
