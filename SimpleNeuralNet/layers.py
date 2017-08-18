@@ -149,7 +149,7 @@ def linear_backward(dZ, cache, reg_function):
     reg = reg_function(W, derivative=True)/m
 
     dW = 1./m * np.dot(dZ,A_prev.T) + reg
-    db = 1./m * np.sum(dZ)
+    db = 1./m * np.sum(dZ, axis=1, keepdims=True)
     dA_prev = np.dot(W.T,dZ)
     
     return dA_prev, dW, db
@@ -168,6 +168,7 @@ def linear_activation_backward(dA, cache, reg_function):
     dW -- Gradient of the cost with respect to W (current layer l), same shape as W
     db -- Gradient of the cost with respect to b (current layer l), same shape as b
     """
+
     linear_cache, activation_cache, activation, dropout_cache = cache
     dA = dropout_backwards(dA, dropout_cache)
     dZ = activation(dA, activation_cache, derivative=True)
