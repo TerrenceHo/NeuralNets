@@ -11,7 +11,8 @@ class NeuralNetwork(object):
     Class that holds Neural Network parameters
     """
 
-    def __init__(self, init_method, layers_dims, keep_probs, activation_funcs,
+    def __init__(self, init_method, layers_dims, keep_probs,
+            optimization_function, activation_funcs,
             cost_func, reg_type, reg_lambd=0.1, learning_rate = 0.0075):
         """ 
         Initializes Neural Network Object
@@ -21,6 +22,7 @@ class NeuralNetwork(object):
             int.  Default = 0.01
         layers_dims -- list containing dimensions of each layer
         keep_probs -- list of floats to determine which neurons to shut down
+        optimization_function -- function to optimize neural network
         activation_funcs -- non-linear functions to activate weights
         cost_func -- cost function to evaluate performance
         reg_type -- function that returns a regularization function
@@ -38,6 +40,7 @@ class NeuralNetwork(object):
         self.parameters = self.Initialize_Parameters(layers_dims, init_method)
         self.costs = []
         self.layers_dims = layers_dims
+        self.optimization_function = optimization_function
         self.activation_funcs = activation_funcs
         self.cost_func = cost_func
         self.reg_type = reg_type
@@ -104,7 +107,7 @@ class NeuralNetwork(object):
         elif Y.shape[0] != self.layers_dims[-1]:
             raise ValueError("Output layer dimensions do not match previously given output layer dimensions")
 
-        self.parameters, self.costs = GradientDescent(X, Y, self.parameters,
+        self.parameters, self.costs = self.optimization_function(X, Y, self.parameters,
                 self.costs, self.activation_funcs, self.keep_probs, self.cost_func,
                 self.reg_type, self.reg_lambd, self.learning_rate,
                 num_iterations, print_cost)
