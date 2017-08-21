@@ -107,10 +107,21 @@ class NeuralNetwork(object):
         elif Y.shape[0] != self.layers_dims[-1]:
             raise ValueError("Output layer dimensions do not match previously given output layer dimensions")
 
-        self.parameters, self.costs = self.optimization_function(X, Y, self.parameters,
-                self.costs, self.activation_funcs, self.keep_probs, self.cost_func,
-                self.reg_type, self.reg_lambd, self.learning_rate,
-                num_iterations, print_cost)
+        self.parameters, self.costs = self.optimization_function(
+                X, 
+                Y, 
+                self.parameters,
+                self.costs, 
+                self.activation_funcs, 
+                self.keep_probs, 
+                self.cost_func,
+                self.reg_type, 
+
+                reg_lambd = self.reg_lambd, 
+                learning_rate = self.learning_rate,
+                num_iterations = num_iterations, 
+                print_cost = print_cost
+            )
 
     def Predict(self, X):
         """
