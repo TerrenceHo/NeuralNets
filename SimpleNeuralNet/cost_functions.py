@@ -14,6 +14,8 @@ def Cross_Entropy_Loss(AL, Y, reg_func, parameters, derivative=False):
             OR dAL, derivative of the cost function
     """
     
+    print("Y = ", Y)
+    print("AL = ", AL)
     if derivative:
         dAL =  -(np.divide(Y, AL) - np.divide(1 - Y, 1 - AL))
         return dAL

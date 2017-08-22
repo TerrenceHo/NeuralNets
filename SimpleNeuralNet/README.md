@@ -8,7 +8,7 @@
     - ~~Pass activation functions into the cache to make it easily retrievable~~
 - Gradient Descent:
     - Momentum
-    - Minibatch
+    - ~~Minibatch~~
 - RMSProp
 - Adam optimizer
 - Learning Rate Decay
