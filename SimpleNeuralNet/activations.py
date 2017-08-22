@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.special import expit
 
 """
 Defines activation functions for connected layers in a network
@@ -42,11 +43,38 @@ def sigmoid(dA, Z, derivative=False):
     """
 
     if derivative:
-        s = 1/(1+np.exp(-Z))
+        # s = np.where(Z > 0, 1. / (1. + np.exp(-Z)), np.exp(Z) / (np.exp(Z) + np.exp(0)))
+        s = expit(Z)
         dZ = dA * s * (1-s)
         return dZ
     else:
-        A = 1/(1+np.exp(-Z))
+        # A = np.where(Z > 0, 1. / (1. + np.exp(-Z)), np.exp(Z) / (np.exp(Z) + np.exp(0)))
+        A = expit(Z)
+        cache = Z
+        return A, cache
+
+def tanh(dA, Z, derivative=False):
+    """
+    Implemented tanh and derivative of tanh for a single activation computation
+
+    Arguments:
+    dA -- post-activation gradient, of any shape
+    Z -- Output of the linear layer, of any shape.  Also called cache
+    derivative -- bool to determine if we are computing derivative or not 
+
+    Returns:
+    if derivative == False:
+        A -- Post-activation parameter, of the same shape as Z
+        cache -- a python dictionary containing "A" ; stored for computing the backward pass efficiently
+    if derivative == True:
+        dZ -- Gradient of the cost with respect to Z
+    """
+
+    if derivative:
+        dZ = dA * (1. - np.square(np.tanh(Z)))
+        return dZ
+    else:
+        A = np.tanh(Z)
         cache = Z
         return A, cache
 

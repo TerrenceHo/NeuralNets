@@ -14,6 +14,6 @@
 - Learning Rate Decay
 - Gradient Checks
 - Dropout layers
-    -Bug concerning numerical stability
+    - Bug concerning numerical stability
 - Batch-Normalization
 - Preprocessing Functions
