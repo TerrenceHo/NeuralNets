@@ -86,7 +86,7 @@ class NeuralNetwork(object):
         return parameters
 
 
-    def Fit(self, X, Y, num_iterations, print_cost=False):
+    def Fit(self, X, Y, num_iterations, mini_batch_size, print_cost=False):
         """
         Function that fits weights to the dataset X and labels Y given.
 
@@ -120,7 +120,8 @@ class NeuralNetwork(object):
                 reg_lambd = self.reg_lambd, 
                 learning_rate = self.learning_rate,
                 num_iterations = num_iterations, 
-                print_cost = print_cost
+                print_cost = print_cost,
+                mini_batch_size = mini_batch_size
             )
 
     def Predict(self, X):

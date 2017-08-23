@@ -63,7 +63,7 @@ def linear_activation_forward(A_prev, W, b, activation, keep_prob):
              stored for computing the backward pass efficiently
     """
     Z, linear_cache = linear_forward(A_prev, W, b)
-    A, activation_cache = activation(None, Z)
+    A, activation_cache = activation(Z)
 
     # Dropout
     A, dropout_cache = dropout_forward(A, keep_prob)
@@ -171,7 +171,7 @@ def linear_activation_backward(dA, cache, reg_function):
 
     linear_cache, activation_cache, activation, dropout_cache = cache
     dA = dropout_backwards(dA, dropout_cache)
-    dZ = activation(dA, activation_cache, derivative=True)
+    dZ = dA * activation(activation_cache, derivative=True)
 
     dA_prev, dW, db = linear_backward(dZ, linear_cache, reg_function)
     

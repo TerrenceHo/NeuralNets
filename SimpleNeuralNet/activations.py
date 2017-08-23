@@ -24,7 +24,7 @@ last layer since it is numerically unsable
 #     return np.tanh(w)
 
 
-def sigmoid(dA, Z, derivative=False):
+def sigmoid(Z, derivative=False):
     """
     Implements the sigmoid activation in numpy
     
@@ -45,15 +45,14 @@ def sigmoid(dA, Z, derivative=False):
     if derivative:
         # s = np.where(Z > 0, 1. / (1. + np.exp(-Z)), np.exp(Z) / (np.exp(Z) + np.exp(0)))
         s = expit(Z)
-        dZ = dA * s * (1-s)
-        return dZ
+        return s * (1-s)
     else:
         # A = np.where(Z > 0, 1. / (1. + np.exp(-Z)), np.exp(Z) / (np.exp(Z) + np.exp(0)))
         A = expit(Z)
         cache = Z
         return A, cache
 
-def tanh(dA, Z, derivative=False):
+def tanh(Z, derivative=False):
     """
     Implemented tanh and derivative of tanh for a single activation computation
 
@@ -71,14 +70,13 @@ def tanh(dA, Z, derivative=False):
     """
 
     if derivative:
-        dZ = dA * (1. - np.square(np.tanh(Z)))
-        return dZ
+        return (1. - np.square(np.tanh(Z)))
     else:
         A = np.tanh(Z)
         cache = Z
         return A, cache
 
-def relu(dA, Z, derivative=False):
+def relu(Z, derivative=False):
     """
     Implement the RELU function or implement the backward propagation for a single RELU unit.
 
@@ -95,10 +93,14 @@ def relu(dA, Z, derivative=False):
         dZ -- Gradient of the cost with respect to Z
     """
     if derivative:
-        dZ = np.array(dA, copy=True) # just converting dz to a correct object.
-        # When z <= 0, you should set dz to 0 as well. 
-        dZ[Z <= 0] = 0
-        return dZ
+        # dZ = np.array(dA, copy=True) # just converting dz to a correct object.
+        # # When z <= 0, you should set dz to 0 as well. 
+        # dZ[Z <= 0] = 0
+        # return dZ
+        deriv = Z
+        deriv[deriv <= 0] = 0
+        deriv[deriv > 0] = 1
+        return deriv
     else:
         A = np.maximum(0,Z)
         cache = Z 
