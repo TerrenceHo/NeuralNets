@@ -56,19 +56,19 @@ def gradients_to_vector(grads):
     specific required shape.
     """
 
-    L = len(parameters) // 2
+    L = len(grads) // 3
     keys = {}
     count = 0
 
     for l in range(L):
         # reshape weight parameter into a single vector
-        new_vector = np.reshape(parameters["dW" + str(l+1)], (-1, 1))
+        new_vector = np.reshape(grads["dW" + str(l+1)], (-1, 1))
         # concat the bias vector onto the flattened weight vector
-        new_vector = np.concatenate((new_vector,parameters["db" + str(l+1)]),
+        new_vector = np.concatenate((new_vector,grads["db" + str(l+1)]),
                 axis=0)
         # add shapes of previous vector for retrieval later
-        keys["dW" + str(l+1)] = parameters["dW" + str(l+1)].shape
-        keys["db" + str(l+1)] = parameters["db" + str(l+1)].shape
+        keys["dW" + str(l+1)] = grads["dW" + str(l+1)].shape
+        keys["db" + str(l+1)] = grads["db" + str(l+1)].shape
 
         # concat new_vector into theta
         if count == 0:

@@ -1,10 +1,12 @@
 from processing.vector_transform import *
+from cost_functions import *
 from layers import *
 
 import numpy as np
 
 
-def gradient_check(parameters, gradients, X, Y, epsilon = 1e-7):
+def gradient_check(parameters, gradients, X, Y, activation_funcs, cost_func,
+        reg_func, epsilon = 1e-7):
     """
     Checks if backward_propagation_n computes correctly the gradient of the cost output by forward_propagation_n
 
@@ -21,7 +23,7 @@ def gradient_check(parameters, gradients, X, Y, epsilon = 1e-7):
 
     # Set-up variables
     parameters_values, keys = dictionary_to_vector(parameters)
-    grad = gradients_to_vector(gradients)
+    grad, _ = gradients_to_vector(gradients)
     num_parameters = parameters_values.shape[0]
     J_plus = np.zeros((num_parameters, 1))
     J_minus = np.zeros((num_parameters, 1))
@@ -36,7 +38,7 @@ def gradient_check(parameters, gradients, X, Y, epsilon = 1e-7):
         ### START CODE HERE ### (approx. 3 lines)
         thetaplus = np.copy(parameters_values)
         thetaplus[i][0] += epsilon
-        thetaplus_vec = vector_to_dictionary(thetaplus)
+        thetaplus_vec = vector_to_dictionary(thetaplus, keys)
         AL, caches = L_model_forward(X, thetaplus_vec, activation_funcs, keep_probs)
         J_plus[i] = cost_func(AL, Y, reg_func, thetaplus_vec)
         ### END CODE HERE ###
@@ -45,9 +47,9 @@ def gradient_check(parameters, gradients, X, Y, epsilon = 1e-7):
         ### START CODE HERE ### (approx. 3 lines)
         thetaminus = np.copy(parameters_values)
         thetaminus[i][0] -= epsilon 
-        thetaminus_vec = vector_to_dictionary(thetaminus)
-        AL, caches
-        J_minus[i], _ = forward_propagation_n(X, Y, vector_to_dictionary(thetaminus)) 
+        thetaminus_vec = vector_to_dictionary(thetaminus, keys)
+        AL, caches = L_model_forward(X, thetaminus_vec, activation_funcs, keep_probs)
+        J_minus[i] = cost_func(AL, Y, reg_func, thetaminus_vec)
         ### END CODE HERE ###
 
         # Compute gradapprox[i]
@@ -57,8 +59,6 @@ def gradient_check(parameters, gradients, X, Y, epsilon = 1e-7):
 
     # Compare gradapprox to backward propagation gradients by computing difference.
     ### START CODE HERE ### (approx. 1 line)
-    print(grad.shape)
-    print(gradapprox.shape)
     numerator = np.linalg.norm(grad - gradapprox) 
     denominator = np.linalg.norm(grad) + np.linalg.norm(gradapprox)
     difference = numerator/denominator 
@@ -70,3 +70,14 @@ def gradient_check(parameters, gradients, X, Y, epsilon = 1e-7):
         print ("\033[92m" + "Your backward propagation works perfectly fine! difference = " + str(difference) + "\033[0m")
 
     return difference
+
+def Check(X, Y, parameters, activation_funcs, cost_func):
+    reg_func = L2_Regularization(0.0)
+    keep_probs = [1.0 for i in activation_funcs]
+
+    AL, caches = L_model_forward(X, parameters, activation_funcs, keep_probs)
+    cost = cost_func(AL, Y, reg_func, parameters)
+    grads = L_model_backward(AL, Y, caches, cost_func, reg_func)
+
+    difference = gradient_check(parameters, grads, X, Y, activation_funcs,
+            cost_func, reg_func)

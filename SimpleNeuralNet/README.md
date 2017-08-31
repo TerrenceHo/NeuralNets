@@ -6,8 +6,8 @@
     - ~~Tanh and derivative~~
     - ~~make passing in activation functions functional~~
     - ~~Pass activation functions into the cache to make it easily retrievable~~
-    - Remove dA from the calculations of derivatives.  Make custom implementations easier.
-        - Only need Z and derivative(bool) as parameters.  Move dA into backprop
+    - ~~Remove dA from the calculations of derivatives.  Make custom implementations easier.~~
+        - ~~Only need Z and derivative(bool) as parameters.  Move dA into backprop~~
 - Optimization Functions:
     - Base Optimization
         - ~~Minibatch~~
