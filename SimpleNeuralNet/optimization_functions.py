@@ -14,6 +14,12 @@ default_configs = {
         "print_cost":False
     }
 
+# def ClassicMomentum:
+
+# def RMSProp:
+
+# def AdamOptimizer:
+
 def GradientDescent(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
         reg_type, **kwargs):
     """
@@ -46,7 +52,7 @@ def GradientDescent(X, Y, parameters, costs, activation_funcs, keep_probs, cost_
     configs = dict(default_configs)
     configs.update(kwargs)
 
-    # Define Update Parameters to pass into Base_Update function
+    # Define Update Parameters to pass into BaseUpdate function
     def update_parameters(parameters, grads, learning_rate):
         """
         Update parameters using gradient descent
@@ -70,11 +76,11 @@ def GradientDescent(X, Y, parameters, costs, activation_funcs, keep_probs, cost_
 
         return parameters
 
-    parameters, costs = Base_Update(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
+    parameters, costs = BaseUpdate(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
         reg_type, update_parameters, **configs)
     return parameters, costs
 
-def Base_Update(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
+def BaseUpdate(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
         reg_type, update_parameters, seed, reg_lambd, learning_rate, num_iterations,
         mini_batch_size, print_cost):
     """
@@ -112,8 +118,14 @@ def Base_Update(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func
         for mini_batch in mini_batches:
             (mini_X, mini_Y) = mini_batch
             AL, caches = L_model_forward(mini_X, parameters, activation_funcs, keep_probs)
-            cost = cost_func(AL, mini_Y, reg_func, parameters)
-            grads = L_model_backward(AL, mini_Y, caches, cost_func, reg_func)
+            cost = cost_func(AL, mini_Y) 
+            cost += reg_func(parameters)/mini_Y.shape[1]
+
+            grads = L_model_backward(AL, mini_Y, caches, cost_func)
+            grads_reg = reg_func(parameters, derivative=True)
+            grads = {k : grads.get(k,0) + grads_reg.get(k, 0) for k in
+                    set(grads.keys()) | set(grads_reg.keys())}
+
             parameters = update_parameters(parameters, grads, learning_rate)
 
         if print_cost and i % 100 == 0:

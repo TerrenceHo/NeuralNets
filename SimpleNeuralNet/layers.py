@@ -131,7 +131,7 @@ def dropout_backwards(dA, dropout_cache):
     dA /= keep_prob
     return dA
 
-def linear_backward(dZ, cache, reg_function):
+def linear_backward(dZ, cache):
     """
     Implement the linear portion of backward propagation for a single layer (layer l)
 
@@ -146,15 +146,14 @@ def linear_backward(dZ, cache, reg_function):
     """
     A_prev, W, b = cache
     m = A_prev.shape[1]
-    reg = reg_function(W, derivative=True)/m
 
-    dW = 1./m * np.dot(dZ,A_prev.T) + reg
+    dW = 1./m * np.dot(dZ,A_prev.T)
     db = 1./m * np.sum(dZ, axis=1, keepdims=True)
     dA_prev = np.dot(W.T,dZ)
     
     return dA_prev, dW, db
 
-def linear_activation_backward(dA, cache, reg_function):
+def linear_activation_backward(dA, cache):
     """
     Implement the backward propagation for the LINEAR->ACTIVATION layer.
     
@@ -173,11 +172,11 @@ def linear_activation_backward(dA, cache, reg_function):
     dA = dropout_backwards(dA, dropout_cache)
     dZ = dA * activation(activation_cache, derivative=True)
 
-    dA_prev, dW, db = linear_backward(dZ, linear_cache, reg_function)
+    dA_prev, dW, db = linear_backward(dZ, linear_cache)
     
     return dA_prev, dW, db
 
-def L_model_backward(AL, Y, caches, cost_function, reg_function):
+def L_model_backward(AL, Y, caches, cost_function):
     """
     Implement the backward propagation for the [LINEAR->RELU] * (L-1) -> LINEAR -> SIGMOID group
     
@@ -188,7 +187,6 @@ def L_model_backward(AL, Y, caches, cost_function, reg_function):
                 every cache of linear_activation_forward() with "relu" (there are (L-1) or them, indexes from 0 to L-2)
                 the cache of linear_activation_forward() with "sigmoid" (there is one, index L-1)
     cost_function -- function to evaluate cost
-    reg_function -- function to apply regularization to gradients
     
     Returns:
     grads -- A dictionary with the gradients
@@ -202,18 +200,18 @@ def L_model_backward(AL, Y, caches, cost_function, reg_function):
     Y = Y.reshape(AL.shape) # after this line, Y is the same shape as AL
     
     # Initializing the backpropagation for cross_entropy_loss
-    dAL = cost_function(AL, Y, None, None, derivative=True)
+    dAL = cost_function(AL, Y, derivative=True)
     
     # Lth layer (SIGMOID -> LINEAR) gradients. Inputs: "AL, Y, caches". Outputs: "grads["dAL"], grads["dWL"], grads["dbL"]
     current_cache = caches[L-1]
     grads["dA" + str(L)], grads["dW" + str(L)], grads["db" + str(L)] = \
-    linear_activation_backward(dAL, current_cache, reg_function)
+    linear_activation_backward(dAL, current_cache)
     
     for l in reversed(range(L - 1)):
         # lth layer: (RELU -> LINEAR) gradients.
         current_cache = caches[l]
         dA_prev_temp, dW_temp, db_temp = linear_activation_backward(grads["dA" +
-            str(l + 2)], current_cache, reg_function)
+            str(l + 2)], current_cache)
         grads["dA" + str(l + 1)] = dA_prev_temp
         grads["dW" + str(l + 1)] = dW_temp
         grads["db" + str(l + 1)] = db_temp

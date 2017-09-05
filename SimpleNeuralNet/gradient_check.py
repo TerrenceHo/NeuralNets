@@ -6,7 +6,7 @@ import numpy as np
 
 
 def gradient_check(parameters, gradients, X, Y, activation_funcs, cost_func,
-        reg_func, epsilon = 1e-7):
+        epsilon = 1e-7):
     """
     Checks if backward_propagation_n computes correctly the gradient of the cost output by forward_propagation_n
 
@@ -40,7 +40,7 @@ def gradient_check(parameters, gradients, X, Y, activation_funcs, cost_func,
         thetaplus[i][0] += epsilon
         thetaplus_vec = vector_to_dictionary(thetaplus, keys)
         AL, caches = L_model_forward(X, thetaplus_vec, activation_funcs, keep_probs)
-        J_plus[i] = cost_func(AL, Y, reg_func, thetaplus_vec)
+        J_plus[i] = cost_func(AL, Y)
         ### END CODE HERE ###
 
         # Compute J_minus[i]. Inputs: "parameters_values, epsilon". Output = "J_minus[i]".
@@ -49,7 +49,7 @@ def gradient_check(parameters, gradients, X, Y, activation_funcs, cost_func,
         thetaminus[i][0] -= epsilon 
         thetaminus_vec = vector_to_dictionary(thetaminus, keys)
         AL, caches = L_model_forward(X, thetaminus_vec, activation_funcs, keep_probs)
-        J_minus[i] = cost_func(AL, Y, reg_func, thetaminus_vec)
+        J_minus[i] = cost_func(AL, Y)
         ### END CODE HERE ###
 
         # Compute gradapprox[i]
@@ -72,12 +72,11 @@ def gradient_check(parameters, gradients, X, Y, activation_funcs, cost_func,
     return difference
 
 def Check(X, Y, parameters, activation_funcs, cost_func):
-    reg_func = L2_Regularization(0.0)
     keep_probs = [1.0 for i in activation_funcs]
 
     AL, caches = L_model_forward(X, parameters, activation_funcs, keep_probs)
-    cost = cost_func(AL, Y, reg_func, parameters)
-    grads = L_model_backward(AL, Y, caches, cost_func, reg_func)
+    cost = cost_func(AL, Y)
+    grads = L_model_backward(AL, Y, caches, cost_func)
 
     difference = gradient_check(parameters, grads, X, Y, activation_funcs,
-            cost_func, reg_func)
+            cost_func)

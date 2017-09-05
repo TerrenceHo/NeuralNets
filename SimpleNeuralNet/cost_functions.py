@@ -1,6 +1,6 @@
 import numpy as np
 
-def Cross_Entropy_Loss(AL, Y, reg_func, parameters, derivative=False):
+def Cross_Entropy_Loss(AL, Y, derivative=False):
     """
     Implement the cross entropy cost function.
 
@@ -14,8 +14,6 @@ def Cross_Entropy_Loss(AL, Y, reg_func, parameters, derivative=False):
             OR dAL, derivative of the cost function
     """
     
-    # print("Y = ", Y)
-    # print("AL = ", AL)
     if derivative:
         dAL =  -(np.divide(Y, AL) - np.divide(1 - Y, 1 - AL))
         return dAL
@@ -24,12 +22,7 @@ def Cross_Entropy_Loss(AL, Y, reg_func, parameters, derivative=False):
         # Compute loss from aL and y.
         cost = (1./m) * (-np.dot(Y,np.log(AL).T) - np.dot(1-Y, np.log(1-AL).T))
         cost = np.squeeze(cost)      # To make sure your cost's shape is what we expect (e.g. this turns [[17]] into 17).
-        # Add regularization
-        cost += reg_func(parameters)/m
         return cost
-
-def Mean_Squared_Loss(AL, Y):
-    return
 
 def L2_Regularization(reg_lambd):
     """
@@ -53,7 +46,11 @@ def L2_Regularization(reg_lambd):
 
     def reg_func(parameters, derivative=False):
         if derivative:
-            return parameters * (reg_lambd)
+            grads_reg = {}
+            L = len(parameters) // 3
+            for l in range(L):
+                grads_reg["dW" + str(l+1)] = parameters["W" + str(l+1)] * reg_lambd
+            return grads_reg
         else:
             L = len(parameters) // 2 # number of layers in the neural network
             reg = 0.0
