@@ -14,7 +14,44 @@ default_configs = {
         "print_cost":False
     }
 
-# def ClassicMomentum:
+def ClassicMomentum(X, Y, parameters, costs, activation_funcs, keep_probs,
+        cost_func, reg_type, v, beta, **kwargs):
+
+    # define velocity parameters for each weight
+    v = {}
+    L = len(parameters) // 2
+    for l in range(1, L):
+        v["dW" + str(l)] = np.zeros(parameters["W" + l].shape)
+        v["db" + str(l)] = np.zeros(parameters["b" + l].shape)
+
+    def update_parameters(parameters, grads, learning_rate):
+        """
+        Update parameters using gradient descent
+
+        Arguments:
+        parameters -- python dictionary containing your parameters 
+        grads -- python dictionary containing your gradients, output of L_model_backward
+
+        Returns:
+        parameters -- python dictionary containing your updated parameters 
+                        parameters["W" + str(l)] = ... 
+                        parameters["b" + str(l)] = ...
+        """
+        for l in range(1, L):
+            v["dW" + str(l)] = beta * v["dW" + str(l)] + (1 - beta) * grads["dW"
+                    + str(l)]
+            v["db" + str(l)] = beta * v["db" + str(l)] + (1 - beta) * grads["db"
+                    + str(l)]
+            # update parameters
+
+            parameters["W" + str(l)] = parameters["W" + str(l)] - learning_rate * v["dW" + str(l)]
+            parameters["b" + str(l)] = parameters["b" + str(l)] - learning_rate * v["db" + str(l)]
+        return parameters
+
+    parameters, costs = BaseUpdate(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
+        reg_type, update_parameters, **configs)
+    return parameters, costs
+
 
 # def RMSProp:
 
