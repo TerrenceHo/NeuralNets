@@ -53,9 +53,11 @@ def ClassicMomentum(X, Y, parameters, costs, activation_funcs, keep_probs,
     return parameters, costs
 
 
-# def RMSProp:
+def RMSProp(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
+        reg_type, beta, s, t, beta, **kwargs):
 
-# def AdamOptimizer:
+def AdamOptimizer(X, Y, parameters, costs, activation_funcs, keep_probs,
+        cost_func, reg_type, beta1, beta2, epsilon, **kwargs):
 
 def GradientDescent(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
         reg_type, **kwargs):
