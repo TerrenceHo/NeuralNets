@@ -59,6 +59,24 @@ def RMSProp(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
 def AdamOptimizer(X, Y, parameters, costs, activation_funcs, keep_probs,
         cost_func, reg_type, beta1, beta2, epsilon, **kwargs):
 
+    L = len(parameters) // 2
+    v = {}
+    s = {}
+    
+    for l in range(L):
+        v["dW" + str(l+1)] = np.zeros(parameters["W" + str(l+1)].shape)
+        v["db" + str(l+1)] = np.zeros(parameters["b" + str(l+1)].shape)
+        s["dW" + str(l+1)] = np.zeros(parameters["W" + str(l+1)].shape)
+        s["db" + str(l+1)] = np.zeros(parameters["b" + str(l+1)].shape)
+
+    def update_parameters(parameters, grads, learning_rate):
+        # update with velocity and s
+
+    parameters, costs = BaseUpdate(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
+        reg_type, update_parameters, **configs)
+    return parameters, costs
+
+
 def GradientDescent(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
         reg_type, **kwargs):
     """
