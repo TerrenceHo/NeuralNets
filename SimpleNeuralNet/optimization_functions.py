@@ -69,8 +69,39 @@ def AdamOptimizer(X, Y, parameters, costs, activation_funcs, keep_probs,
         s["dW" + str(l+1)] = np.zeros(parameters["W" + str(l+1)].shape)
         s["db" + str(l+1)] = np.zeros(parameters["b" + str(l+1)].shape)
 
+    v_corrected = {}
+    s_corrected = {}
+
     def update_parameters(parameters, grads, learning_rate):
-        # update with velocity and s
+        """
+        Update parameters using gradient descent
+
+        Arguments:
+        parameters -- python dictionary containing your parameters 
+        grads -- python dictionary containing your gradients, output of L_model_backward
+
+        Returns:
+        parameters -- python dictionary containing your updated parameters 
+                        parameters["W" + str(l)] = ... 
+                        parameters["b" + str(l)] = ...
+        """
+
+        for l in range(L):
+            v["dW" + str(l+1)] = beta1 * v["dW" + str(l+1)] + (1 - beta1) * grads["dW" + str(l+1)]
+            v["db" + str(l+1)] = beta1 * v["db" + str(l+1)] + (1 - beta1) * grads["db" + str(l+1)]
+
+            v_corrected["dW" + str(l+1)] = v["dW" + str(l+1)]/(1-beta1**t)
+            v_corrected["db" + str(l+1)] = v["db" + str(l+1)]/(1-beta1**t)
+
+            s["dW" + str(l+1)] = beta2 * s["dW" + str(l+1)] + (1 - beta2) * grads["dW" + str(l+1)] * grads["dW" + str(l+1)]
+            s["db" + str(l+1)] = beta2 * s["db" + str(l+1)] + (1 - beta2) * grads["db" + str(l+1)] * grads["db" + str(l+1)]
+
+            s_corrected["dW" + str(l+1)] = s["dW" + str(l+1)]/(1 - beta2**t)
+            s_corrected["db" + str(l+1)] = s["db" + str(l+1)]/(1 - beta2**t)
+
+            parameters["W" + str(l+1)] = parameters["W" + str(l+1)] - learning_rate * (v_corrected["dW" + str(l+1)] / (np.sqrt(s_corrected["dW" + str(l+1)]) + epsilon))
+            parameters["b" + str(l+1)] = parameters["b" + str(l+1)] - learning_rate * (v_corrected["db" + str(l+1)] / (np.sqrt(s_corrected["db" + str(l+1)]) + epsilon))
+        return parameters
 
     parameters, costs = BaseUpdate(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
         reg_type, update_parameters, **configs)
