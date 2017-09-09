@@ -56,6 +56,40 @@ def ClassicMomentum(X, Y, parameters, costs, activation_funcs, keep_probs,
 def RMSProp(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
         reg_type, beta, s, t, beta, **kwargs):
 
+    L = len(parameters) // 2
+    s = {}
+    
+    for l in range(L):
+        s["dW" + str(l+1)] = np.zeros(parameters["W" + str(l+1)].shape)
+        s["db" + str(l+1)] = np.zeros(parameters["b" + str(l+1)].shape)
+
+    s_corrected = {}
+
+    def update_parameters(parameters, grads, learning_rate):
+        """
+        Update parameters using gradient descent
+
+        Arguments:
+        parameters -- python dictionary containing your parameters 
+        grads -- python dictionary containing your gradients, output of L_model_backward
+
+        Returns:
+        parameters -- python dictionary containing your updated parameters 
+                        parameters["W" + str(l)] = ... 
+                        parameters["b" + str(l)] = ...
+        """
+
+        for l in range(L):
+            s["dW" + str(l+1)] = beta2 * s["dW" + str(l+1)] + (1 - beta2) * grads["dW" + str(l+1)] * grads["dW" + str(l+1)]
+            s["db" + str(l+1)] = beta2 * s["db" + str(l+1)] + (1 - beta2) * grads["db" + str(l+1)] * grads["db" + str(l+1)]
+
+            s_corrected["dW" + str(l+1)] = s["dW" + str(l+1)]/(1 - beta2**t)
+            s_corrected["db" + str(l+1)] = s["db" + str(l+1)]/(1 - beta2**t)
+
+            parameters["W" + str(l+1)] = parameters["W" + str(l+1)] / (np.sqrt(s_corrected["dW" + str(l+1)]) + epsilon))
+            parameters["b" + str(l+1)] = parameters["b" + str(l+1)] / (np.sqrt(s_corrected["db" + str(l+1)]) + epsilon))
+        return parameters
+
 def AdamOptimizer(X, Y, parameters, costs, activation_funcs, keep_probs,
         cost_func, reg_type, beta1, beta2, epsilon, **kwargs):
 
