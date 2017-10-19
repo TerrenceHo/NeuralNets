@@ -17,6 +17,10 @@ default_configs = {
 def ClassicMomentum(X, Y, parameters, costs, activation_funcs, keep_probs,
         cost_func, reg_type, v, beta, **kwargs):
 
+    # Pass in default configs
+    configs = dict(default_configs)
+    configs.update(kwargs)
+
     # define velocity parameters for each weight
     v = {}
     L = len(parameters) // 2
@@ -56,6 +60,10 @@ def ClassicMomentum(X, Y, parameters, costs, activation_funcs, keep_probs,
 def RMSProp(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
         reg_type, beta, s, t, beta, **kwargs):
 
+    # Pass in default configs
+    configs = dict(default_configs)
+    configs.update(kwargs)
+
     L = len(parameters) // 2
     s = {}
     
@@ -93,10 +101,14 @@ def RMSProp(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
 def AdamOptimizer(X, Y, parameters, costs, activation_funcs, keep_probs,
         cost_func, reg_type, beta1, beta2, epsilon, **kwargs):
 
+    # Pass in default configs
+    configs = dict(default_configs)
+    configs.update(kwargs)
+
     L = len(parameters) // 2
     v = {}
     s = {}
-    
+
     for l in range(L):
         v["dW" + str(l+1)] = np.zeros(parameters["W" + str(l+1)].shape)
         v["db" + str(l+1)] = np.zeros(parameters["b" + str(l+1)].shape)
@@ -191,7 +203,6 @@ def GradientDescent(X, Y, parameters, costs, activation_funcs, keep_probs, cost_
 
         L = len(parameters) // 2 # number of layers in the neural network
 
-        # Update rule for each parameter. Use a for loop.
         for l in range(L):
             parameters["W" + str(l+1)] = parameters["W" + str(l+1)] - learning_rate * grads["dW" + str(l+1)]
             parameters["b" + str(l+1)] = parameters["b" + str(l+1)] - learning_rate * grads["db" + str(l+1)]
