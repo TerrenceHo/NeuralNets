@@ -1,5 +1,5 @@
 import numpy as np
-from activations import *
+from .activations import *
 
 # ===== Forward Layers ===== 
 def dropout_forward(A, keep_prob):

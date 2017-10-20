@@ -2,8 +2,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Custom Libs
-from optimization_functions import *
 
 
 class NeuralNetwork(object):

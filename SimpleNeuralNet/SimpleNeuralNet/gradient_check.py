@@ -1,6 +1,6 @@
 from processing.vector_transform import *
-from cost_functions import *
-from layers import *
+from .cost_functions import *
+from .layers import *
 
 import numpy as np
 

@@ -1,8 +1,8 @@
 import numpy as np
 import math
 
-from layers import *
-from cost_functions import *
+from .layers import *
+from .cost_functions import *
 
 # dictionary to list default configurations for all updating algorithms
 default_configs = {
@@ -58,7 +58,7 @@ def ClassicMomentum(X, Y, parameters, costs, activation_funcs, keep_probs,
 
 
 def RMSProp(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
-        reg_type, beta, s, t, beta, **kwargs):
+        reg_type, beta1, s, t, beta2, **kwargs):
 
     # Pass in default configs
     configs = dict(default_configs)
@@ -94,8 +94,8 @@ def RMSProp(X, Y, parameters, costs, activation_funcs, keep_probs, cost_func,
             s_corrected["dW" + str(l+1)] = s["dW" + str(l+1)]/(1 - beta2**t)
             s_corrected["db" + str(l+1)] = s["db" + str(l+1)]/(1 - beta2**t)
 
-            parameters["W" + str(l+1)] = parameters["W" + str(l+1)] / (np.sqrt(s_corrected["dW" + str(l+1)]) + epsilon))
-            parameters["b" + str(l+1)] = parameters["b" + str(l+1)] / (np.sqrt(s_corrected["db" + str(l+1)]) + epsilon))
+            parameters["W" + str(l+1)] = parameters["W" + str(l+1)] / (np.sqrt(s_corrected["dW" + str(l+1)]) + epsilon)
+            parameters["b" + str(l+1)] = parameters["b" + str(l+1)] / (np.sqrt(s_corrected["db" + str(l+1)]) + epsilon)
         return parameters
 
 def AdamOptimizer(X, Y, parameters, costs, activation_funcs, keep_probs,
